@@ -13,6 +13,11 @@ abstract class Kitsune extends Spirit {
 		$this->penguins[$socket] = $new_penguin;
 	}
 	
+	protected function handleDisconnect($socket) {
+		unset($this->penguins[$socket]);
+		echo "Player disconnected\n";
+	}
+	
 	protected function handleReceive($socket, $data) {
 		echo "$data\n";
 		$chunked_array = explode("\0", $data);
@@ -28,8 +33,14 @@ abstract class Kitsune extends Spirit {
 		}
 	}
 	
+	protected function removePenguin($penguin) {
+		$this->removeClient($penguin->socket);
+		unset($this->players[$penguin->socket]);
+	}
+	
 	abstract protected function handleXmlPacket($socket, $packet);
 	abstract protected function handleWorldPacket($socket, $packet);
+	
 }
 
 ?>
