@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: May 12, 2014 at 02:58 AM
+-- Generation Time: May 13, 2014 at 06:12 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -54,10 +54,11 @@ INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Loc
 
 CREATE TABLE IF NOT EXISTS `penguins` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `Username` varchar(12) NOT NULL,
-  `Nickname` varchar(16) NOT NULL,
+  `Username` char(12) NOT NULL,
+  `Nickname` char(16) NOT NULL,
   `Password` char(32) NOT NULL,
-  `ConfirmationHash` varchar(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `LoginKey` char(32) NOT NULL,
+  `ConfirmationHash` char(32) NOT NULL,
   `SWID` char(38) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   `Email` char(254) NOT NULL,
   `Inventory` text NOT NULL,
@@ -83,8 +84,8 @@ CREATE TABLE IF NOT EXISTS `penguins` (
 -- Dumping data for table `penguins`
 --
 
-INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `ConfirmationHash`, `SWID`, `Email`, `Inventory`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`) VALUES
-(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', 'b15835f133ff2e27c7cb28117bfae8f4', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', 'lucy@kitsune.org', '', 1, '', '', '', '', 1, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Email`, `Inventory`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`) VALUES
+(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', 'lucy@kitsune.org', '', 1, '', '', '', '', 1, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
