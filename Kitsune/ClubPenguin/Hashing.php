@@ -11,7 +11,7 @@ final class Hashing {
 		$random_key = "";
 		
 		foreach(range(0, $key_length) as $current_length) {
-			$random_key = substr(self::$character_set, mt_rand(0, strlen(self::$character_set)), 1);
+			$random_key .= substr(self::$character_set, mt_rand(0, strlen(self::$character_set)), 1);
 		}
 		
 		return $random_key;
