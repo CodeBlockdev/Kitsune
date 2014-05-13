@@ -13,8 +13,8 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		"login" => "handleLogin"
 	);
 	
-	private static $world_handlers = array(
-		// Currently empty
+	protected $world_handlers = array(
+		// Overridden in the World class
 	);
 	
 	private function handlePolicyRequest($socket, $packet) {
@@ -43,7 +43,23 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	}
 	
 	protected function handleWorldPacket($socket, $packet) {
-		echo "{$packet::$handler}\n", print_r($packet);
+		if(isset($this->world_handlers[$packet::$extension])) {
+			if(!empty($this->world_handlers[$packet::$extension])) {
+				if(isset($this->world_handlers[$packet::$extension][$packet::$handler])) {
+					if(method_exists($this, $this->world_handlers[$packet::$extension][$packet::$handler])) {
+						call_user_func(array($this, $this->world_handlers[$packet::$extension][$packet::$handler]), $socket, $packet);
+					} else {
+						echo "Method for {$packet::$extension}%{$packet::$handler} is un-callable!\n";
+					}
+				} else {
+					echo "Method for {$packet::$extension}%{$packet::$handler} doesn't exist/has not been set\n";
+				}
+			} else {
+				echo "There are no handlers for {$packet::$extension}\n";
+			}
+		} else {
+			echo "The packet extension '{$packet::$extension}' is not handled\n";
+		}
 	}
 	
 }
