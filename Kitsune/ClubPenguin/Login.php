@@ -26,6 +26,7 @@ final class Login extends ClubPenguin {
 			$friends_key = md5($penguin_data["ID"]); // May need to change this later!
 			$login_time = time(); // ?
 			$penguin->database->updateColumnById($penguin_data["ID"], "ConfirmationHash", $confirmation_hash);
+			$penguin->database->updateColumnById($penguin_data["ID"], "LoginKey", $encrypted_password);
 			$penguin->send("%xt%l%-1%{$penguin_data["ID"]}|{$penguin_data["SWID"]}|{$penguin_data["Username"]}|$encrypted_password|1|45|2|false|true|$login_time%$confirmation_hash%$friends_key%101,1%{$penguin_data["Email"]}%");
 		}
 	}
