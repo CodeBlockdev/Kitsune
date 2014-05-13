@@ -43,22 +43,26 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	}
 	
 	protected function handleWorldPacket($socket, $packet) {
-		if(isset($this->world_handlers[$packet::$extension])) {
-			if(!empty($this->world_handlers[$packet::$extension])) {
-				if(isset($this->world_handlers[$packet::$extension][$packet::$handler])) {
-					if(method_exists($this, $this->world_handlers[$packet::$extension][$packet::$handler])) {
-						call_user_func(array($this, $this->world_handlers[$packet::$extension][$packet::$handler]), $socket, $packet);
+		if($this->penguins[$socket]->identified == true) {
+			if(isset($this->world_handlers[$packet::$extension])) {
+				if(!empty($this->world_handlers[$packet::$extension])) {
+					if(isset($this->world_handlers[$packet::$extension][$packet::$handler])) {
+						if(method_exists($this, $this->world_handlers[$packet::$extension][$packet::$handler])) {
+							call_user_func(array($this, $this->world_handlers[$packet::$extension][$packet::$handler]), $socket, $packet);
+						} else {
+							echo "Method for {$packet::$extension}%{$packet::$handler} is un-callable!\n";
+						}
 					} else {
-						echo "Method for {$packet::$extension}%{$packet::$handler} is un-callable!\n";
+						echo "Method for {$packet::$extension}%{$packet::$handler} doesn't exist/has not been set\n";
 					}
 				} else {
-					echo "Method for {$packet::$extension}%{$packet::$handler} doesn't exist/has not been set\n";
+					echo "There are no handlers for {$packet::$extension}\n";
 				}
 			} else {
-				echo "There are no handlers for {$packet::$extension}\n";
+				echo "The packet extension '{$packet::$extension}' is not handled\n";
 			}
 		} else {
-			echo "The packet extension '{$packet::$extension}' is not handled\n";
+			$this->removePenguin($this->penguins[$socket]);
 		}
 	}
 	

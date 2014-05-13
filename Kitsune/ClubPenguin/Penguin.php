@@ -9,7 +9,9 @@ class Penguin {
 	public $username;
 	public $swid;
 
+	public $identified;
 	public $random_key;
+	
 	public $socket;
 	public $database;
 	
