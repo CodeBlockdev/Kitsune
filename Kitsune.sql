@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: May 13, 2014 at 06:12 AM
+-- Generation Time: May 15, 2014 at 04:03 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -37,14 +37,15 @@ CREATE TABLE IF NOT EXISTS `igloos` (
   `Likes` text NOT NULL,
   `Locked` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=2 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
 
 --
 -- Dumping data for table `igloos`
 --
 
 INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES
-(1, 101, 1, 0, 0, '', 0, '', 1);
+(1, 101, 1, 0, 0, '', 0, '', 1),
+(2, 102, 1, 0, 0, '', 0, '', 1);
 
 -- --------------------------------------------------------
 
@@ -60,8 +61,11 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `LoginKey` char(32) NOT NULL,
   `ConfirmationHash` char(32) NOT NULL,
   `SWID` char(38) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `Avatar` char(98) NOT NULL DEFAULT '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}',
   `Email` char(254) NOT NULL,
+  `RegistrationDate` int(8) NOT NULL,
   `Inventory` text NOT NULL,
+  `Coins` mediumint(7) unsigned NOT NULL DEFAULT '200000',
   `Igloo` int(10) unsigned NOT NULL COMMENT 'Current active igloo',
   `Igloos` text NOT NULL COMMENT 'Owned igloo types',
   `Floors` text NOT NULL COMMENT 'Owned floorings',
@@ -78,14 +82,15 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Flag` smallint(5) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=102 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=103 ;
 
 --
 -- Dumping data for table `penguins`
 --
 
-INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Email`, `Inventory`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`) VALUES
-(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', 'lucy@kitsune.org', '', 1, '', '', '', '', 1, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`) VALUES
+(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.org', 1399248450, '1%2%3%4', 1000000, 1, '', '', '', '', 1, 0, 0, 0, 0, 0, 0, 0, 0),
+(102, 'Blackhole', 'Blackhole', 'DC647EB65E6711E155375218212B3964', '', '', '{747e5e06-12ff-283a-6f6a-5e5e77cf7b7f}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'black@hole.org', 1400118790, '4%413%221', 200000, 2, '', '', '', '', 4, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -95,7 +100,9 @@ INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `C
 
 CREATE TABLE IF NOT EXISTS `puffles` (
   `ID` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `Owner` int(10) unsigned NOT NULL,
   `Name` char(12) NOT NULL,
+  `Type` tinyint(3) unsigned NOT NULL,
   `Hat` smallint(5) unsigned NOT NULL,
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
