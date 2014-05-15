@@ -14,7 +14,7 @@ class Packet {
 		$first_character = substr($raw_data, 0, 1);
 		self::$is_xml = $first_character == '<';
 		if(self::$is_xml) {
-			$xml_array = Parsers\XMLParser::Parse($raw_data);
+			$xml_array = Parsers\XMLParser::parse($raw_data);
 			if(!$xml_array) {
 				self::$handler = "policy";
 			} else {
@@ -22,7 +22,7 @@ class Packet {
 				self::$data = $xml_array;
 			}
 		} else {
-			$xt_array = Parsers\XTParser::Parse($raw_data);
+			$xt_array = Parsers\XTParser::parse($raw_data);
 			self::$extension = $xt_array[0];
 			self::$handler = $xt_array[1];
 			array_shift($xt_array);
