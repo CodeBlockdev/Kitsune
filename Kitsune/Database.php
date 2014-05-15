@@ -17,6 +17,20 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function playerIdExists($id) {
+		try {
+			$exists_stmt = $this->prepare("SELECT ID FROM `penguins` WHERE ID = :ID");
+			$exists_stmt->bindValue(":ID", $id);
+			$exists_stmt->execute();
+			$row_count = $exists_stmt->rowCount();
+			$exists_stmt->closeCursor();
+			
+			return $row_count > 0;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function usernameExists($username) {
 		try {
 			$exists_stmt = $this->prepare("SELECT ID FROM `penguins` WHERE Username = :Username");
@@ -36,6 +50,21 @@ class Database extends \PDO {
 			$columns_string = implode(', ', $columns);
 			$columns_stmt = $this->prepare("SELECT $columns_string FROM `penguins` WHERE Username = :Username");
 			$columns_stmt->bindValue(":Username", $username);
+			$columns_stmt->execute();
+			$penguin_columns = $columns_stmt->fetch(\PDO::FETCH_ASSOC);
+			$columns_stmt->closeCursor();
+			
+			return $penguin_columns;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function getColumnsById($id, array $columns) {
+		try {
+			$columns_string = implode(', ', $columns);
+			$columns_stmt = $this->prepare("SELECT $columns_string FROM `penguins` WHERE ID = :ID");
+			$columns_stmt->bindValue(":ID", $id);
 			$columns_stmt->execute();
 			$penguin_columns = $columns_stmt->fetch(\PDO::FETCH_ASSOC);
 			$columns_stmt->closeCursor();
