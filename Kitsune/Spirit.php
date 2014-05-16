@@ -74,4 +74,6 @@ abstract class Spirit {
 
 }
 
+ob_implicit_flush();
+
 ?>	
