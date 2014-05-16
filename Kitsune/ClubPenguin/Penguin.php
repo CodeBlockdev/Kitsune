@@ -33,6 +33,70 @@ class Penguin {
 		$this->database = new Kitsune\Database();
 	}
 	
+	public function updateColor($item_id) {
+		$this->color = $item_id;
+		$this->database->updateColumnById($this->id, "Color", $item_id);
+		$this->room->send("%xt%upc%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateHead($item_id) {
+		$this->head = $item_id;
+		$this->database->updateColumnById($this->id, "Head", $item_id);
+		$this->room->send("%xt%uph%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateFace($item_id) {
+		$this->face = $item_id;
+		$this->database->updateColumnById($this->id, "Face", $item_id);
+		$this->room->send("%xt%upf%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateNeck($item_id) {
+		$this->neck = $item_id;
+		$this->database->updateColumnById($this->id, "Neck", $item_id);
+		$this->room->send("%xt%upn%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateBody($item_id) {
+		$this->body = $item_id;
+		$this->database->updateColumnById($this->id, "Body", $item_id);
+		$this->room->send("%xt%upb%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateHand($item_id) {
+		$this->hand = $item_id;
+		$this->database->updateColumnById($this->id, "Hand", $item_id);
+		$this->room->send("%xt%upa%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateFeet($item_id) {
+		$this->feet = $item_id;
+		$this->database->updateColumnById($this->id, "Feet", $item_id);
+		$this->room->send("%xt%upe%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updatePhoto($item_id) {
+		$this->photo = $item_id;
+		$this->database->updateColumnById($this->id, "Photo", $item_id);
+		$this->room->send("%xt%upp%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function updateFlag($item_id) {
+		$this->flag = $item_id;
+		$this->database->updateColumnById($this->id, "Flag", $item_id);
+		$this->room->send("%xt%upl%{$this->room->internal_id}%{$this->id}%$item_id%");
+	}
+	
+	public function addItem($item_id, $cost) {
+		array_push($this->inventory, $item_id);
+		$this->coins -= $cost;
+		
+		$this->database->updateColumnById($this->id, "Coins", $this->coins);
+		$this->database->updateColumnById($this->id, "Inventory", implode('%', $this->inventory));
+		
+		$this->send("%xt%ai%{$this->room->internal_id}%$item_id%{$this->coins}%");
+	}
+	
 	public function loadPlayer() {
 		$this->random_key = null;
 		
