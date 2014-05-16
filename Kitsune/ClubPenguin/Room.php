@@ -4,7 +4,7 @@ namespace Kitsune\ClubPenguin;
 
 class Room {
 
-	private $penguins = array();
+	public $penguins = array();
 	
 	public $external_id;
 	public $internal_id;
