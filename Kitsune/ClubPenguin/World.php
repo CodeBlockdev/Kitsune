@@ -74,18 +74,6 @@ final class World extends ClubPenguin {
 		call_user_func(array($penguin, "update{$clothing[$clothing_type]}"), $item_id);
 	}
 	
-	protected function handleSendUpdatePlayerColour($socket, $packet) {
-		$item_id = $packet::$data[2];
-		
-		if(!is_numeric($item_id)) {
-			return;
-		} elseif(!in_array($item_id, $penguin->inventory)) {
-			return;
-		} else {
-			$penguin->updateColor($item_id);
-		}
-	}
-	
 	protected function handleBuyInventory($socket, $packet) {
 		$penguin = $this->penguins[$socket];
 		$item_id = $packet::$data[2];
