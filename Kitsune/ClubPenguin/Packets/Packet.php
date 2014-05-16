@@ -26,7 +26,6 @@ class Packet {
 			self::$extension = $xt_array[0];
 			self::$handler = $xt_array[1];
 			array_shift($xt_array);
-			array_shift($xt_array);
 			
 			self::$data = $xt_array;
 		}
