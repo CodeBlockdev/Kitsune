@@ -5,11 +5,10 @@ use Kitsune;
 
 abstract class ClubPenguin extends Kitsune\Kitsune {
 
-	// Maybe make these protected ?
 	private static $xml_handlers = array(
 		"policy" => "handlePolicyRequest",
 		"verChk" => "handleVersionCheck",
-		"rndK" => "handleRandomKey", // A *request* for a random-key
+		"rndK" => "handleRandomKey",
 		"login" => "handleLogin"
 	);
 	
