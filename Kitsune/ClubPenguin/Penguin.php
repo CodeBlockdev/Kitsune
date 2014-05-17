@@ -19,6 +19,8 @@ class Penguin {
 	public $coins;
 	public $inventory;
 	
+	public $active_igloo;
+	
 	public $x = 0;
 	public $y = 0;
 	public $frame;
@@ -31,6 +33,24 @@ class Penguin {
 	public function __construct($socket) {
 		$this->socket = $socket;
 		$this->database = new Kitsune\Database();
+	}
+	
+	public function buyLocation($location_id, $cost = 0) {
+		$this->locations[$location_id] = time();
+		
+		$locations_string = implode(',', array_map(
+			function($location, $purchase_date) {
+				return $location . '|' . $purchase_date;
+			}, array_keys($this->locations), $this->locations));
+		
+		$this->database->updateColumnById($this->id, "Locations", $locations_string);
+		
+		if($cost !== 0) {
+			$this->coins -= $cost;
+			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+		}
+		
+		$this->send("%xt%aloc%{$this->room->internal_id}%$location_id%{$this->coins}%");
 	}
 	
 	public function updateColor($item_id) {
@@ -89,10 +109,12 @@ class Penguin {
 	
 	public function addItem($item_id, $cost) {
 		array_push($this->inventory, $item_id);
-		$this->coins -= $cost;
-		
-		$this->database->updateColumnById($this->id, "Coins", $this->coins);
 		$this->database->updateColumnById($this->id, "Inventory", implode('%', $this->inventory));
+		
+		if($cost !== 0) {
+			$this->coins -= $cost;
+			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+		}
 		
 		$this->send("%xt%ai%{$this->room->internal_id}%$item_id%{$this->coins}%");
 	}
