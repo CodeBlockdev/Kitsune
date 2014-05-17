@@ -17,6 +17,69 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function updateIglooColumn($igloo_id, $column, $value) {
+		try {
+			$update_igloo_stmt = $this->prepare("UPDATE `igloos` SET $column = :Value WHERE ID = :Igloo");
+			$update_igloo_stmt->bindValue(":Value", $value);
+			$update_igloo_stmt->bindValue(":Igloo", $igloo_id);
+			$update_igloo_stmt->execute();
+			$update_igloo_stmt->closeCursor();
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function getAllIglooLayouts($player_id) {
+		try {
+			$igloos_stmt = $this->prepare("SELECT ID FROM `igloos` WHERE Owner = :Owner");
+			$igloos_stmt->bindValue(":Owner", $player_id);
+			$igloos_stmt->execute();
+			
+			$owned_igloos = $igloos_stmt->fetchAll(\PDO::FETCH_ASSOC);
+			$igloos_stmt->closeCursor();
+			
+			$owned_igloos = array_column($owned_igloos, "ID");
+			
+			$slot_number = 0;
+			$igloo_layouts = array();
+			
+			foreach($owned_igloos as $owned_igloo) {
+				array_push($igloo_layouts, $this->getIglooDetails($owned_igloo, ++$slot_number));
+			}
+			
+			$igloo_layouts = implode('%', $igloo_layouts);
+			
+			return $igloo_layouts;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function getIglooDetails($igloo_id, $slot_number = 1) {
+		try {
+			$igloo_stmt = $this->prepare("SELECT Type, Floor, Music, Location, Likes, Locked, Furniture FROM `igloos` WHERE ID = :Igloo");
+			$igloo_stmt->bindValue(":Igloo", $igloo_id);
+			$igloo_stmt->execute();
+			$igloo_array = $igloo_stmt->fetch(\PDO::FETCH_ASSOC);
+			$igloo_stmt->closeCursor();
+			
+			$igloo_details = $igloo_id;
+			$igloo_details .= ':' . $slot_number;
+			$igloo_details .= ':0';
+			$igloo_details .= ':' . $igloo_array["Locked"];
+			$igloo_details .= ':' . $igloo_array["Music"];
+			$igloo_details .= ':' . $igloo_array["Floor"];
+			$igloo_details .= ':' . $igloo_array["Location"];
+			$igloo_details .= ':' . $igloo_array["Type"];
+			$igloo_details .= ':' . 0; // Igloo likes!
+			$igloo_details .= ':' . $igloo_array["Furniture"];
+			
+			return $igloo_details;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function playerIdExists($id) {
 		try {
 			$exists_stmt = $this->prepare("SELECT ID FROM `penguins` WHERE ID = :ID");
