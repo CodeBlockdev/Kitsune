@@ -13,6 +13,7 @@ class Packet {
 	public function __construct($raw_data) {
 		$first_character = substr($raw_data, 0, 1);
 		self::$is_xml = $first_character == '<';
+		
 		if(self::$is_xml) {
 			$xml_array = Parsers\XMLParser::parse($raw_data);
 			if(!$xml_array) {
