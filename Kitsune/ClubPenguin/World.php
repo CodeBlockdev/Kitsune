@@ -35,13 +35,19 @@ final class World extends ClubPenguin {
 			"j#jp" => "handleJoinPlayerRoom",
 			"g#aloc" => "handleBuyIglooLocation",
 			"g#gail" => "handleGetAllIglooLayouts",
-			"g#uic" => "handleUpdateIglooConfiguration"
+			"g#uic" => "handleUpdateIglooConfiguration",
+			"g#af" => "handleBuyFurniture",
+			"g#ag" => "handleSendBuyIglooFloor",
+			"g#au" => "handleSendBuyIglooType"
 		)
 	);
 	
 	private $rooms = array();
 	private $items = array();
 	private $locations = array();
+	private $furniture = array();
+	private $floors = array();
+	private $igloos = array();
 	
 	public function __construct() {
 		$downloadAndDecode = function($url) {
@@ -67,7 +73,7 @@ final class World extends ClubPenguin {
 		}
 		echo "done\n";
 		
-		echo "Building location list.. ";
+		echo "Building location catalogue.. ";
 		$locations = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloo_locations.json");
 		foreach($locations as $location) {
 			$location_id = $location["igloo_location_id"];
@@ -75,6 +81,86 @@ final class World extends ClubPenguin {
 			unset($locations[$location_id]);
 		}
 		echo "done\n";
+		
+		echo "Building furniture catalogue.. ";
+		$furniture_list = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/furniture_items.json");
+		foreach($furniture_list as $furniture) {
+			$furniture_id = $furniture["furniture_item_id"];
+			$this->furniture[$furniture_id] = $furniture["cost"];
+			unset($furniture_list[$furniture_id]);
+		}
+		echo "done\n";
+		
+		echo "Building floor catalogue.. ";
+		$floors = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloo_floors.json");
+		foreach($floors as $floor) {
+			$floor_id = $floor["igloo_floor_id"];
+			$this->floors[$floor_id] = $floor["cost"];
+			unset($floors[$floor_id]);
+		}
+		echo "done\n";
+		
+		echo "Building igloo catalogue.. ";
+		$igloos = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloos.json");
+		foreach($igloos as $igloo_id => $igloo) {
+			$cost = $igloo["cost"];
+			$this->igloos[$igloo_id] = $cost;
+			unset($igloos[$igloo_id]);
+		}
+		echo "done\n";
+	}
+	
+	protected function handleSendBuyIglooType($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$igloo_id = $packet::$data[2];
+		
+		if(!isset($this->igloos[$igloo_id])) {
+			return $penguin->send("%xt%e%-1%402%");
+		} elseif(isset($penguin->igloos[$igloo_id])) { // May not be right lol?
+			return $penguin->send("%xt%e%-1%400%");
+		}
+		
+		$cost = $this->igloos[$igloo_id];
+		if($penguin->coins < $cost) {
+			return $penguin->send("%xt%e%-1%401%");
+		} else {
+			$penguin->buyIgloo($igloo_id, $cost);
+		}
+	}
+	
+	protected function handleSendBuyIglooFloor($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$floor_id = $packet::$data[2];
+		
+		if(!isset($this->floors[$floor_id])) {
+			return $penguin->send("%xt%e%-1%402%");
+		} elseif(isset($penguin->floors[$floor_id])) {
+			return $penguin->send("%xt%e%-1%400%");
+		}
+		
+		$cost = $this->floors[$floor_id];
+		if($penguin->coins < $cost) {
+			return $penguin->send("%xt%e%-1%401%");
+		} else {
+			$penguin->buyFloor($floor_id, $cost);
+		}
+		
+	}
+		
+	protected function handleBuyFurniture($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$furniture_id = $packet::$data[2];
+		
+		if(!isset($this->furniture[$furniture_id])) {
+			return $penguin->send("%xt%e%-1%402%");
+		}
+		
+		$cost = $this->furniture[$furniture_id];
+		if($penguin->coins < $cost) {
+			return $penguin->send("%xt%e%-1%401%");
+		} else {
+			$penguin->buyFurniture($furniture_id, $cost);
+		}
 	}
 	
 	protected function handleUpdateIglooConfiguration($socket, $packet) {
@@ -106,7 +192,7 @@ final class World extends ClubPenguin {
 			$igloo_layouts = $penguin->database->getAllIglooLayouts($player_id);
 			$active_igloo = $penguin->database->getColumnById($player_id, "Igloo");
 			
-			$penguin->send("%xt%gail%{$penguin->room->internal_id}%$active_igloo%$igloo_layouts%");
+			$penguin->send("%xt%gail%{$penguin->room->internal_id}%$player_id%$active_igloo%$igloo_layouts%");
 		}
 	}
 	
@@ -116,7 +202,7 @@ final class World extends ClubPenguin {
 		
 		if(!isset($this->locations[$location_id])) {
 			return $penguin->send("%xt%e%-1%402%");
-		} elseif(isset($this->penguin->locations[$location_id])) {
+		} elseif(isset($penguin->locations[$location_id])) {
 			return $penguin->send("%xt%e%-1%400%");
 		}
 		
@@ -175,8 +261,36 @@ final class World extends ClubPenguin {
 		$penguin = $this->penguins[$socket];
 		
 		$furniture_list = $penguin->database->getColumnsById($penguin->id, array("Furniture", "Floors", "Igloos", "Locations"));
-		$furniture_list = implode('%', $furniture_list);
 		
+		$furniture_array = explode(',', $furniture_list["Furniture"]);
+		foreach($furniture_array as $furniture) {
+			$furniture_details = explode('|', $furniture);
+			list($furniture_id, $purchase_date, $quantity) = $furniture_details;
+			$penguin->furniture[$furniture_id] = $quantity;
+		}
+		
+		$flooring_array = explode(',', $furniture_list["Floors"]);
+		foreach($flooring_array as $flooring) {
+			$flooring_details = explode('|', $flooring);
+			list($flooring_id, $purchase_date) = $flooring_details;
+			$penguin->floors[$flooring_id] = $purchase_date;
+		}
+		
+		$igloos_array = explode(',', $furniture_list["Igloos"]);
+		foreach($igloos_array as $igloo) {
+			$igloo_details = explode('|', $igloo);
+			list($igloo_type, $purchase_date) = $igloo_details;
+			$penguin->igloos[$igloo_type] = $purchase_date;
+		}
+		
+		$location_array = explode(',', $furniture_list["Locations"]);
+		foreach($location_array as $location) {
+			$location_details = explode('|', $location);
+			list($location_id, $purchase_date) = $location_details;
+			$penguin->locations[$location_id] = $purchase_date;
+		}
+		
+		$furniture_list = implode('%', $furniture_list);
 		$penguin->send("%xt%gii%{$penguin->room->internal_id}%$furniture_list%");
 	}
 	
