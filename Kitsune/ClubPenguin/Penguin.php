@@ -21,6 +21,11 @@ class Penguin {
 	
 	public $active_igloo;
 	
+	public $furniture = array();
+	public $locations = array();
+	public $floors = array();
+	public $igloos = array();
+	
 	public $x = 0;
 	public $y = 0;
 	public $frame;
@@ -33,6 +38,67 @@ class Penguin {
 	public function __construct($socket) {
 		$this->socket = $socket;
 		$this->database = new Kitsune\Database();
+	}
+	
+	public function buyIgloo($igloo_id, $cost = 0) {
+		$this->igloos[$igloo_id] = time();
+		
+		$igloos_string = implode(',', array_map(
+			function($igloo, $purchase_date) {
+				return $igloo . '|' . $purchase_date;
+			}, array_keys($this->igloos), $this->igloos));
+		
+		$this->database->updateColumnById($this->id, "Igloos", $igloos_string);
+		
+		if($cost !== 0) {
+			$this->coins -= $cost;
+			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+		}
+		
+		$this->send("%xt%au%{$this->room->internal_id}%$igloo_id%{$this->coins}%");
+	}
+	
+	public function buyFloor($floor_id, $cost = 0) {
+		$this->floors[$floor_id] = time();
+		
+		$flooring_string = implode(',', array_map(
+			function($floor, $purchase_date) {
+				return $floor . '|' . $purchase_date;
+			}, array_keys($this->floors), $this->floors));
+		
+		$this->database->updateColumnById($this->id, "Floors", $flooring_string);
+		
+		if($cost !== 0) {
+			$this->coins -= $cost;
+			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+		}
+		
+		$this->send("%xt%ag%{$this->room->internal_id}%$floor_id%{$this->coins}%");
+	}
+	
+	public function buyFurniture($furniture_id, $cost = 0) {
+		$furniture_quantity = 1;
+		
+		if(isset($this->furniture[$furniture_id])) {
+			list($furniture_quantity) = $this->furniture[$furniture_id];
+		}
+		
+		$this->furniture[$furniture_id] = array($furniture_quantity, time());
+		
+		$furniture_string = implode(',', array_map(
+			function($furniture_id, $furniture_details) {
+				list($quantity, $purchase_date) = $furniture_details;
+				return $furniture_id . '|' . $purchase_date . '|' . $quantity;
+			}, array_keys($this->furniture), $this->furniture));
+		
+		$this->database->updateColumnById($this->id, "Furniture", $furniture_string);
+		
+		if($cost !== 0) {
+			$this->coins -= $cost;
+			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+		}
+		
+		$this->send("%xt%af%{$this->room->internal_id}%$furniture_id%{$this->coins}%");
 	}
 	
 	public function buyLocation($location_id, $cost = 0) {
