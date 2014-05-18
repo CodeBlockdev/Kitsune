@@ -38,7 +38,8 @@ final class World extends ClubPenguin {
 			"g#uic" => "handleUpdateIglooConfiguration",
 			"g#af" => "handleBuyFurniture",
 			"g#ag" => "handleSendBuyIglooFloor",
-			"g#au" => "handleSendBuyIglooType"
+			"g#au" => "handleSendBuyIglooType",
+			"g#al" => "handleAddIglooLayout"
 		)
 	);
 	
@@ -110,6 +111,20 @@ final class World extends ClubPenguin {
 		echo "done\n";
 	}
 	
+	protected function handleAddIglooLayout($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		
+		$owned_igloo_count = $penguin->database->getOwnedIglooCount($penguin->id);
+		
+		if($owned_igloo_count < 3) {
+			$igloo_id = $penguin->database->addIglooLayout($penguin->id);
+			$penguin->active_igloo = $igloo_id;
+			$igloo_details = $penguin->database->getIglooDetails($igloo_id, ++$owned_igloo_count);
+			$penguin->send("%xt%al%{$penguin->room->internal_id}%{$penguin->id}%$igloo_details%");
+		}
+		
+	}
+	
 	protected function handleSendBuyIglooType($socket, $packet) {
 		$penguin = $this->penguins[$socket];
 		$igloo_id = $packet::$data[2];
@@ -166,20 +181,22 @@ final class World extends ClubPenguin {
 	protected function handleUpdateIglooConfiguration($socket, $packet) {
 		$penguin = $this->penguins[$socket];
 		
-		$player_id = $packet::$data[2];
+		$active_igloo = $packet::$data[2];
 		$igloo_type = $packet::$data[3];
 		$floor = $packet::$data[4];
 		$location = $packet::$data[5];
 		$music = $packet::$data[6];
 		$furniture = $packet::$data[7];
 		
+		$penguin->active_igloo = $active_igloo;
+		$penguin->database->updateColumnById($penguin->id, "Igloo", $penguin->active_igloo);
 		$penguin->database->updateIglooColumn($penguin->active_igloo, "Type", $igloo_type);
 		$penguin->database->updateIglooColumn($penguin->active_igloo, "Floor", $floor);
 		$penguin->database->updateIglooColumn($penguin->active_igloo, "Location", $location);
 		$penguin->database->updateIglooColumn($penguin->active_igloo, "Music", $music);
 		$penguin->database->updateIglooColumn($penguin->active_igloo, "Furniture", $furniture);
 		
-		$penguin->send("%xt%uic%{$penguin->room->internal_id}%$player_id%{$penguin->active_igloo}%$igloo_type:$floor:$location:$music:$furniture%");
+		$penguin->send("%xt%uic%{$penguin->room->internal_id}%{$penguin->id}%{$penguin->active_igloo}%$igloo_type:$floor:$location:$music:$furniture%");
 		
 		echo "HANDLE UPDATE IGLOO CONFIGURATION NOT DONE\n";
 	}
