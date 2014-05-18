@@ -17,6 +17,38 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function addIglooLayout($player_id) {
+		try {
+			$add_igloo_stmt = $this->prepare("INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES (NULL, :Owner, '1', '0', '0', '', '1', '', '1');");
+			$add_igloo_stmt->bindValue(":Owner", $player_id);
+			$add_igloo_stmt->execute();
+			$add_igloo_stmt->closeCursor();
+			
+			$igloo_id = $this->lastInsertId();
+			
+			$this->updateColumnById($player_id, "Igloo", $igloo_id);
+			
+			return $igloo_id;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function getOwnedIglooCount($player_id) {
+		try {
+			$igloo_count_stmt = $this->prepare("SELECT ID FROM `igloos` WHERE Owner = :Owner");
+			$igloo_count_stmt->bindValue(":Owner", $player_id);
+			$igloo_count_stmt->execute();
+			
+			$igloo_count = $igloo_count_stmt->rowCount();
+			$igloo_count_stmt->closeCursor();
+			
+			return $igloo_count;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function updateIglooColumn($igloo_id, $column, $value) {
 		try {
 			$update_igloo_stmt = $this->prepare("UPDATE `igloos` SET $column = :Value WHERE ID = :Igloo");
