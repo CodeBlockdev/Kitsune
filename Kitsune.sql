@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: May 17, 2014 at 09:49 PM
+-- Generation Time: May 18, 2014 at 10:44 PM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `igloos` (
 --
 
 INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES
-(1, 101, 1, 0, 0, '', 6, '', 1),
+(1, 101, 73, 21, 0, '908|725|85|2|1,2226|581|146|1|1', 6, '', 1),
 (2, 102, 1, 0, 0, '', 1, '', 1);
 
 -- --------------------------------------------------------
@@ -89,7 +89,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
 --
 
 INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`) VALUES
-(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.org', 1399248450, '1%2%3%4%711%712%9%9088%9262%9260%9037%210%1539%717%2151%24090%1865%1864%24089%24088%1863%24059%24060%1866%24091%4790%4533%1528%5374%2109%1867%24092%6036%1837%24056%24055%1836%6112%1840%3108%3203%3114%3111%3202%1847%1845%3206%1368%1367%1363%1360%1361%303%1373%1372%1846%1844%1853%4560%7188%501%3032%821%8006%8010%8011%8009', 985450, 1, '1|0', '', '6|1400351014', '', 4, 1840, 2109, 0, 24059, 5374, 6036, 9260, 7188),
+(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.org', 1399248450, '1%2%3%4%711%712%9%9088%9262%9260%9037%210%1539%717%2151%24090%1865%1864%24089%24088%1863%24059%24060%1866%24091%4790%4533%1528%5374%2109%1867%24092%6036%1837%24056%24055%1836%6112%1840%3108%3203%3114%3111%3202%1847%1845%3206%1368%1367%1363%1360%1361%303%1373%1372%1846%1844%1853%4560%7188%501%3032%821%8006%8010%8011%8009', 979075, 1, '1|0,73|1400445126', '14|1400443221,21|1400443224,7|1400443228', '6|1400351014', '966||1,2226||1,908|1400443758|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9260, 7188),
 (102, 'Blackhole', 'Blackhole', 'DC647EB65E6711E155375218212B3964', '', '', '{747e5e06-12ff-283a-6f6a-5e5e77cf7b7f}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'black@hole.org', 1400118790, '4%413%221', 200000, 2, '', '', '', '', 4, 413, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
