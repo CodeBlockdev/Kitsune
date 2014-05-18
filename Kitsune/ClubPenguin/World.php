@@ -39,7 +39,10 @@ final class World extends ClubPenguin {
 			"g#af" => "handleBuyFurniture",
 			"g#ag" => "handleSendBuyIglooFloor",
 			"g#au" => "handleSendBuyIglooType",
-			"g#al" => "handleAddIglooLayout"
+			"g#al" => "handleAddIglooLayout",
+			"m#sm" => "handleSendMessage",
+			"u#se" => "handleSendEmote",
+			"u#sb" => "handlePlayerThrowBall"
 		)
 	);
 	
@@ -109,6 +112,29 @@ final class World extends ClubPenguin {
 			unset($igloos[$igloo_id]);
 		}
 		echo "done\n";
+	}
+	
+	protected function handlePlayerThrowBall($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		
+		$x = $packet::$data[2];
+		$y = $packet::$data[3];
+		
+		$penguin->room->send("%xt%sb%{$penguin->room->internal_id}%{$penguin->id}%$x%$y%");
+	}
+	
+	protected function handleSendEmote($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$emote_id = $packet::$data[2];
+		
+		$penguin->room->send("%xt%se%{$penguin->room->internal_id}%{$penguin->id}%$emote_id%");
+	}
+	
+	protected function handleSendMessage($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$message = $packet::$data[3];
+
+		$penguin->room->send("%xt%sm%{$penguin->room->internal_id}%{$penguin->id}%$message%");
 	}
 	
 	protected function handleAddIglooLayout($socket, $packet) {
