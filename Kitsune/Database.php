@@ -17,6 +17,20 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function iglooExists($igloo_id) {
+		try {
+			$igloo_exists_stmt = $this->prepare("SELECT ID FROM `igloos` WHERE ID = :Igloo");
+			$igloo_exists_stmt->bindValue(":Igloo", $igloo_id);
+			$igloo_exists_stmt->execute();
+			$row_count = $igloo_exists_stmt->rowCount();
+			$igloo_exists_stmt->closeCursor();
+			
+			return $row_count > 0;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function addIglooLayout($player_id) {
 		try {
 			$add_igloo_stmt = $this->prepare("INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES (NULL, :Owner, '1', '0', '0', '', '1', '', '1');");
