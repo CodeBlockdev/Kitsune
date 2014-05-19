@@ -42,7 +42,10 @@ final class World extends ClubPenguin {
 			"g#al" => "handleAddIglooLayout",
 			"m#sm" => "handleSendMessage",
 			"u#se" => "handleSendEmote",
-			"u#sb" => "handlePlayerThrowBall"
+			"u#sb" => "handlePlayerThrowBall",
+			"g#uiss" => "handleUpdateIglooSlotSummary",
+			"u#gbffl" => "handleGetBestFriendsList",
+			"g#gr" => "handleGetOpenIglooList"
 		)
 	);
 	
@@ -52,6 +55,8 @@ final class World extends ClubPenguin {
 	private $furniture = array();
 	private $floors = array();
 	private $igloos = array();
+	
+	private $open_igloos = array();
 	
 	public function __construct() {
 		$downloadAndDecode = function($url) {
@@ -112,6 +117,50 @@ final class World extends ClubPenguin {
 			unset($igloos[$igloo_id]);
 		}
 		echo "done\n";
+	}
+	
+	// Implement igloo likes
+	protected function handleGetOpenIglooList($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		
+		$open_igloos = implode('%', array_map(function($player_id, $igloo) {
+			list($username, $likes) = $igloo;
+			return $player_id . '|' . $username . '|' . $likes . '|0|0';
+		}, array_keys($this->open_igloos), $this->open_igloos));
+		
+		$penguin->send("%xt%gr%{$penguin->room->internal_id}%0%0%$open_igloos%");
+	}	
+	
+	protected function handleGetBestFriendsList($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%gbffl%{$penguin->room->internal_id}%");
+	}
+	
+	// People can steal other people's igloos this way.. need to add checks to make sure they are the owners!
+	protected function handleUpdateIglooSlotSummary($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$active_igloo = $packet::$data[2];
+		
+		if(is_numeric($active_igloo) && $penguin->database->iglooExists($active_igloo)) {
+			$penguin->active_igloo = $active_igloo;
+			$penguin->database->updateColumnById($penguin->id, "Igloo", $active_igloo);
+			
+			$raw_slot_summary = $packet::$data[3];
+			$slot_summary = explode(',', $raw_slot_summary);
+			
+			foreach($slot_summary as $summary) {
+				list($igloo_id, $locked) = explode('|', $summary);
+				if(is_numeric($igloo_id) && is_numeric($locked)) {
+					if($penguin->database->iglooExists($igloo_id)) {
+						$penguin->database->updateIglooColumn($igloo_id, "Locked", $locked);
+						
+						if($locked == 0 && $penguin->active_igloo == $igloo_id) {
+							$this->open_igloos[$penguin->id] = array($penguin->username, 0); // TODO: Implement igloo likes
+						}
+					}
+				}
+			}
+		}
 	}
 	
 	protected function handlePlayerThrowBall($socket, $packet) {
@@ -204,27 +253,32 @@ final class World extends ClubPenguin {
 		}
 	}
 	
+	// Need to add checks to make sure they are the owner!
 	protected function handleUpdateIglooConfiguration($socket, $packet) {
 		$penguin = $this->penguins[$socket];
 		
 		$active_igloo = $packet::$data[2];
-		$igloo_type = $packet::$data[3];
-		$floor = $packet::$data[4];
-		$location = $packet::$data[5];
-		$music = $packet::$data[6];
-		$furniture = $packet::$data[7];
-		
-		$penguin->active_igloo = $active_igloo;
-		$penguin->database->updateColumnById($penguin->id, "Igloo", $penguin->active_igloo);
-		$penguin->database->updateIglooColumn($penguin->active_igloo, "Type", $igloo_type);
-		$penguin->database->updateIglooColumn($penguin->active_igloo, "Floor", $floor);
-		$penguin->database->updateIglooColumn($penguin->active_igloo, "Location", $location);
-		$penguin->database->updateIglooColumn($penguin->active_igloo, "Music", $music);
-		$penguin->database->updateIglooColumn($penguin->active_igloo, "Furniture", $furniture);
-		
-		$penguin->send("%xt%uic%{$penguin->room->internal_id}%{$penguin->id}%{$penguin->active_igloo}%$igloo_type:$floor:$location:$music:$furniture%");
-		
-		echo "HANDLE UPDATE IGLOO CONFIGURATION NOT DONE\n";
+		if(is_numeric($active_igloo) && $penguin->database->iglooExists($active_igloo)) {
+			$igloo_type = $packet::$data[3];
+			$floor = $packet::$data[4];
+			$location = $packet::$data[5];
+			$music = $packet::$data[6];
+			$furniture = $packet::$data[7];
+			
+			if(is_numeric($igloo_type) && is_numeric($floor) && is_numeric($location) && is_numeric($music) && (strstr($furniture, ',') !== false)) {
+				$penguin->active_igloo = $active_igloo;
+				$penguin->database->updateColumnById($penguin->id, "Igloo", $penguin->active_igloo);
+				$penguin->database->updateIglooColumn($penguin->active_igloo, "Type", $igloo_type);
+				$penguin->database->updateIglooColumn($penguin->active_igloo, "Floor", $floor);
+				$penguin->database->updateIglooColumn($penguin->active_igloo, "Location", $location);
+				$penguin->database->updateIglooColumn($penguin->active_igloo, "Music", $music);
+				$penguin->database->updateIglooColumn($penguin->active_igloo, "Furniture", $furniture);
+				
+				$penguin->send("%xt%uic%{$penguin->room->internal_id}%{$penguin->id}%{$penguin->active_igloo}%$igloo_type:$floor:$location:$music:$furniture%");
+				
+				echo "HANDLE UPDATE IGLOO CONFIGURATION NOT DONE\n";
+			}
+		}
 	}
 	
 	protected function handleGetAllIglooLayouts($socket, $packet) {
