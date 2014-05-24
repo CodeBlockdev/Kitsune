@@ -17,6 +17,80 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function getTotalIglooLikes($owner_id) {
+		try {
+			include "Misc/array_column.php";
+			$total_likes_stmt = $this->prepare("SELECT Likes FROM `igloos` WHERE Owner = :Owner");
+			$total_likes_stmt->bindValue(":Owner", $owner_id);
+			$total_likes_stmt->execute();
+			
+			$likes = $total_likes_stmt->fetchAll(\PDO::FETCH_ASSOC);
+			$total_likes_stmt->closeCursor();
+			
+			$likes = array_column($likes, "Likes");
+			
+			$total_likes = 0;
+			
+			foreach($likes as $likes_json) {
+				$igloo_likes = json_decode($likes_json, true);
+				
+				foreach($igloo_likes as $like) {
+					$total_likes += $like["count"];
+				}
+			}
+			
+			return $total_likes;
+			
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+			
+	
+	public function getUsernamesBySwid($swid_list) {
+		try {
+			$swids = explode(',', $swid_list);
+			$usernames = array();
+			
+			foreach($swids as $swid) {
+				$swid_username_stmt = $this->prepare("SELECT Username FROM `penguins` WHERE SWID = :Swid");
+				$swid_username_stmt->bindValue(":Swid", $swid);
+				$swid_username_stmt->execute();
+				
+				$row_count = $swid_username_stmt->rowCount();
+				if($row_count !== 0) {
+					$swid_username_stmt->bindColumn("Username", $username);
+					$swid_username_stmt->fetch(\PDO::FETCH_BOUND);
+				
+					array_push($usernames, $username);
+				}
+				
+				$swid_username_stmt->closeCursor();
+			}
+			
+			return implode(',', $usernames);
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}				
+	
+	public function getIglooLikes($igloo_id) {
+		try {
+			$igloo_likes_stmt = $this->prepare("SELECT Likes FROM `igloos` WHERE ID = :Igloo");
+			$igloo_likes_stmt->bindValue(":Igloo", $igloo_id);
+			$igloo_likes_stmt->execute();
+			$igloo_likes_stmt->bindColumn("Likes", $likes_json);
+			$igloo_likes_stmt->fetch(\PDO::FETCH_BOUND);
+			$igloo_likes_stmt->closeCursor();
+			
+			$likes = json_decode($likes_json, true);
+			
+			return $likes;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function iglooExists($igloo_id) {
 		try {
 			$igloo_exists_stmt = $this->prepare("SELECT ID FROM `igloos` WHERE ID = :Igloo");
@@ -75,8 +149,26 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function getIglooColumn($igloo_id, $column) {
+		try {
+			$get_igloo_stmt = $this->prepare("SELECT $column FROM `igloos` WHERE ID = :Igloo");
+			$get_igloo_stmt->bindValue(":Igloo", $igloo_id);
+			$get_igloo_stmt->execute();
+			$get_igloo_stmt->bindColumn($column, $value);
+			$get_igloo_stmt->fetch(\PDO::FETCH_BOUND);
+			$get_igloo_stmt->closeCursor();
+			
+			return $value;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+			
+	
 	public function getAllIglooLayouts($player_id) {
 		try {
+			include "Misc/array_column.php";
+			
 			$igloos_stmt = $this->prepare("SELECT ID FROM `igloos` WHERE Owner = :Owner");
 			$igloos_stmt->bindValue(":Owner", $player_id);
 			$igloos_stmt->execute();
@@ -109,6 +201,13 @@ class Database extends \PDO {
 			$igloo_array = $igloo_stmt->fetch(\PDO::FETCH_ASSOC);
 			$igloo_stmt->closeCursor();
 			
+			$likes = json_decode($igloo_array["Likes"], true);
+			
+			$like_count = 0;
+			foreach($likes as $like) {
+				$like_count += $like["count"];
+			}
+			
 			$igloo_details = $igloo_id;
 			$igloo_details .= ':' . $slot_number;
 			$igloo_details .= ':0';
@@ -117,7 +216,7 @@ class Database extends \PDO {
 			$igloo_details .= ':' . $igloo_array["Floor"];
 			$igloo_details .= ':' . $igloo_array["Location"];
 			$igloo_details .= ':' . $igloo_array["Type"];
-			$igloo_details .= ':' . 0; // Igloo likes!
+			$igloo_details .= ':' . $like_count; // Igloo likes!
 			$igloo_details .= ':' . $igloo_array["Furniture"];
 			
 			return $igloo_details;
