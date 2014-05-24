@@ -268,6 +268,9 @@ final class World extends ClubPenguin {
 					}
 				}
 			}
+			
+			$igloo_details = $penguin->database->getIglooDetails($active_igloo);
+			$penguin->room->send("%xt%uvi%{$penguin->room->internal_id}%$active_igloo%$igloo_details%");
 		}
 	}
 	
@@ -384,7 +387,8 @@ final class World extends ClubPenguin {
 				
 				$penguin->send("%xt%uic%{$penguin->room->internal_id}%{$penguin->id}%{$penguin->active_igloo}%$igloo_type:$floor:$location:$music:$furniture%");
 				
-				echo "HANDLE UPDATE IGLOO CONFIGURATION NOT DONE\n";
+				$igloo_details = $penguin->database->getIglooDetails($active_igloo);
+				$penguin->room->send("%xt%uvi%{$penguin->room->internal_id}%$active_igloo%$igloo_details%");
 			}
 		}
 	}
