@@ -45,7 +45,11 @@ final class World extends ClubPenguin {
 			"u#sb" => "handlePlayerThrowBall",
 			"g#uiss" => "handleUpdateIglooSlotSummary",
 			"u#gbffl" => "handleGetBestFriendsList",
-			"g#gr" => "handleGetOpenIglooList"
+			"g#gr" => "handleGetOpenIglooList",
+			"g#gili" => "handleGetIglooLikeBy",
+			"g#li" => "handleLikeIgloo",
+			"u#pbsu" => "handlePlayerBySwidUsername",
+			"g#cli" => "handleCanLikeIgloo"
 		)
 	);
 	
@@ -119,17 +123,119 @@ final class World extends ClubPenguin {
 		echo "done\n";
 	}
 	
-	// Implement igloo likes
+	protected function handleCanLikeIgloo($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$player_id = $packet::$data[1];
+		
+		if($penguin->database->playerIdExists($player_id)) {
+			$active_igloo = $penguin->database->getColumnById($player_id, "Igloo");
+			$likes = $penguin->database->getIglooLikes($active_igloo);
+			
+			foreach($likes as $like) {
+				if($like["id"] == $penguin->swid) {
+					$time_remaining = (time() - $like["time"]) * 1000;
+					
+					$can_like = array(
+						"canLike" => false,
+						"periodicity" => "ScheduleDaily",
+						"nextLike_msecs" => $time_remaining
+					);
+					
+					$can_like = json_encode($can_like);
+					$penguin->send("%xt%cli%{$penguin->room->internal_id}%$active_igloo%200%$can_like%");
+					
+					break;
+				}
+			}
+		}
+	}
+	
+	protected function handlePlayerBySwidUsername($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$swid_list = $packet::$data[2];
+		
+		$username_list = $penguin->database->getUsernamesBySwid($swid_list);
+		$penguin->send("%xt%pbsu%{$penguin->room->internal_id}%$username_list%");
+	}
+	
+	protected function handleLikeIgloo($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$player_id = $packet::$data[1];
+		
+		include "Misc/array_column.php";
+		
+		if($penguin->database->playerIdExists($player_id)) {
+			$active_igloo = $penguin->database->getColumnById($player_id, "Igloo");
+			$igloo_likes = $penguin->database->getIglooLikes($active_igloo);
+			$swids = array_column($igloo_likes, "id");
+			
+			if(in_array($penguin->swid, $swids)) {
+				foreach($igloo_likes as $like_index => $like) {
+					if($like["id"] == $penguin->swid) {
+						$like["count"] == ++$like["count"];
+						$igloo_likes[$like_index] = $like;
+						
+						break;
+					}
+				}
+			} else {
+				$like = array(
+					"id" => $penguin->swid,
+					"time" => time(),
+					"count" => 1,
+					"isFriend" => false // TODO: Implement buddies
+				);
+				
+				array_push($igloo_likes, $like);
+			}
+			
+			$igloo_likes_json = json_encode($igloo_likes);
+			$penguin->database->updateIglooColumn($active_igloo, "Likes", $igloo_likes_json);
+		}
+	}
+	
+	protected function handleGetIglooLikeBy($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$player_id = $packet::$data[1];
+		
+		if($penguin->database->playerIdExists($player_id)) {
+			$igloo_id = $penguin->database->getColumnById($player_id, "Igloo");
+			$igloo_likes = $penguin->database->getIglooLikes($igloo_id);
+			$total_likes = $penguin->database->getTotalIglooLikes($player_id);
+			
+			$likes = array(
+				"likedby" => array(
+					"counts" => array(
+						"count" => $total_likes,
+						"maxCount" => $total_likes,
+						"accumCount" => $total_likes
+					),
+					"IDs" => $igloo_likes
+				)
+			);
+			
+			$likes_json = json_encode($likes);
+			$penguin->send("%xt%gili%{$penguin->room->internal_id}%{$igloo_id}%200%$likes_json%");
+		}
+	}
+	
 	protected function handleGetOpenIglooList($socket, $packet) {
 		$penguin = $this->penguins[$socket];
+		$total_likes = $penguin->database->getTotalIglooLikes($penguin->id);
 		
-		$open_igloos = implode('%', array_map(function($player_id, $igloo) {
-			list($username, $likes) = $igloo;
-			return $player_id . '|' . $username . '|' . $likes . '|0|0';
-		}, array_keys($this->open_igloos), $this->open_igloos));
+		$open_igloos = implode('%', array_map(
+			function($player_id, $username) use ($penguin, $total_likes) {
+				if($player_id == $penguin->id) {
+					$likes = $total_likes;
+				} else {
+					$likes = $penguin->database->getTotalIglooLikes($player_id);
+				}
+			
+				return $player_id . '|' . $username . '|' . $likes . '|0|0';
+			}, array_keys($this->open_igloos), $this->open_igloos));
 		
-		$penguin->send("%xt%gr%{$penguin->room->internal_id}%0%0%$open_igloos%");
-	}	
+		$penguin->send("%xt%gr%{$penguin->room->internal_id}%$total_likes%0%$open_igloos%");
+	}
 	
 	protected function handleGetBestFriendsList($socket, $packet) {
 		$penguin = $this->penguins[$socket];
@@ -155,7 +261,9 @@ final class World extends ClubPenguin {
 						$penguin->database->updateIglooColumn($igloo_id, "Locked", $locked);
 						
 						if($locked == 0 && $penguin->active_igloo == $igloo_id) {
-							$this->open_igloos[$penguin->id] = array($penguin->username, 0); // TODO: Implement igloo likes
+							$this->open_igloos[$penguin->id] = $penguin->username;
+						} elseif($locked == 1 && $penguin->active_igloo == $igloo_id) {
+							unset($this->open_igloos[$penguin->id]);
 						}
 					}
 				}
@@ -281,6 +389,7 @@ final class World extends ClubPenguin {
 		}
 	}
 	
+	// Should use $penguin->id instead of $packet::$data[2].. ?
 	protected function handleGetAllIglooLayouts($socket, $packet) {
 		$penguin = $this->penguins[$socket];
 		$player_id = $packet::$data[2];
@@ -288,8 +397,11 @@ final class World extends ClubPenguin {
 		if($penguin->database->playerIdExists($player_id)) {
 			$igloo_layouts = $penguin->database->getAllIglooLayouts($player_id);
 			$active_igloo = $penguin->database->getColumnById($player_id, "Igloo");
+			$total_likes = $penguin->database->getTotalIglooLikes($player_id);
 			
 			$penguin->send("%xt%gail%{$penguin->room->internal_id}%$player_id%$active_igloo%$igloo_layouts%");
+			$penguin->send("%xt%gaili%{$penguin->room->internal_id}%$total_likes%%");
+			
 		}
 	}
 	
