@@ -21,7 +21,11 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	}
 	
 	private function handleVersionCheck($socket, $packet) {
-		$this->penguins[$socket]->send("<msg t='sys'><body action='apiOK' r='0'></body></msg>");
+		if($packet::$data["ver"]["@attributes"]["v"] == 153) {
+			$this->penguins[$socket]->send("<msg t='sys'><body action='apiOK' r='0'></body></msg>");
+		} else {
+			$this->penguins[$socket]->send("<msg t='sys'><body action='apiKO' r='0'></body></msg>");
+		}
 	}
 	
 	private function handleRandomKey($socket, $packet) {
@@ -34,8 +38,8 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	
 	protected function handleXmlPacket($socket, $packet) {
 		if(array_key_exists($packet::$handler, self::$xml_handlers)) {
-			$invokee = self::$xml_handlers[$packet::$handler];
-			call_user_func(array($this, $invokee), $socket, $packet);
+			$method = self::$xml_handlers[$packet::$handler];
+			call_user_func(array($this, $method), $socket, $packet);
 		} else {
 			echo "Method for {$packet::$handler} not found!\n";
 		}
