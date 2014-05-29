@@ -40,6 +40,7 @@ final class World extends ClubPenguin {
 			"g#ag" => "handleSendBuyIglooFloor",
 			"g#au" => "handleSendBuyIglooType",
 			"g#al" => "handleAddIglooLayout",
+			"g#pio" => "handleLoadIsPlayerIglooOpen",
 			"m#sm" => "handleSendMessage",
 			"u#se" => "handleSendEmote",
 			"u#sb" => "handlePlayerThrowBall",
@@ -49,7 +50,11 @@ final class World extends ClubPenguin {
 			"g#gili" => "handleGetIglooLikeBy",
 			"g#li" => "handleLikeIgloo",
 			"u#pbsu" => "handlePlayerBySwidUsername",
-			"g#cli" => "handleCanLikeIgloo"
+			"g#cli" => "handleCanLikeIgloo",
+			"p#checkpufflename" => "handleCheckPuffleNameWithResponse",
+			"p#pn" => "handleAdoptPuffle",
+			"p#pgmps" => "handleGetMyPuffleStats",
+			"p#pw" => "handleSendPuffleWalk"
 		)
 	);
 	
@@ -63,8 +68,20 @@ final class World extends ClubPenguin {
 	private $open_igloos = array();
 	
 	public function __construct() {
+		if(is_dir("crumbs") === false) {
+			mkdir("crumbs", 0777);
+		}
+		
 		$downloadAndDecode = function($url) {
-			$json_data = file_get_contents($url);
+			$filename = basename($url, ".json");
+			
+			if(file_exists("crumbs/$filename.json")) {
+				$json_data = file_get_contents("crumbs/$filename.json");
+			} else {
+				$json_data = file_get_contents($url);
+				file_put_contents("crumbs/$filename.json", $json_data);
+			}
+			
 			$data_array = json_decode($json_data, true);
 			return $data_array;
 		};
@@ -121,6 +138,66 @@ final class World extends ClubPenguin {
 			unset($igloos[$igloo_id]);
 		}
 		echo "done\n";
+	}
+	
+	protected function handleLoadIsPlayerIglooOpen($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$player_id = $packet::$data[2];
+		
+		if(isset($this->open_igloos[$player_id])) {
+			$open = 1;
+		} else {
+			$open = 0;
+		}
+		
+		$penguin->send("%xt%pio%{$penguin->room->internal_id}%$open%");
+	}
+	
+	// Add check to make sure puffle belongs to the player
+	protected function handleSendPuffleWalk($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$puffle_id = $packet::$data[2];
+		$walk_boolean = $packet::$data[3];
+		
+		if(is_numeric($puffle_id) && $penguin->database->puffleExists($puffle_id)) {
+			if($walk_boolean == 0 || $walk_boolean == 1) {
+				$penguin->walkPuffle($puffle_id, $walk_boolean);
+			}
+			
+			if($walk_boolean == 0) {
+				$penguin->database->updateColumnById($penguin->id, "Walking", 0);
+			} else {
+				$penguin->database->updateColumnById($penguin->id, "Walking", $puffle_id);
+			}
+		}
+	}
+	
+	protected function handleGetMyPuffleStats($socket, $packet) {
+		echo "TODO: Work on handleGetMyPuffleStats\n";
+	}
+	
+	// Check if they exceed puffle limit
+	// Also check if types are valid!
+	// Implement proper coin deduction
+	protected function handleAdoptPuffle($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$puffle_type = $packet::$data[2];
+		$puffle_name = ucfirst($packet::$data[3]);
+		$puffle_subtype = $packet::$data[4];
+		
+		// DB stuff
+		if(is_numeric($puffle_type) && is_numeric($puffle_subtype)) {
+			$puffle_id = $penguin->database->adoptPuffle($penguin->id, $puffle_name, $puffle_type, $puffle_subtype);
+			$adoption_date = time();
+			$penguin->send("%xt%pn%{$penguin->room->internal_id}%1059%$puffle_id|$puffle_type||$puffle_name|$adoption_date|100|100|100|100|0|0|0|1|%");
+		}
+	}
+	
+	protected function handleCheckPuffleNameWithResponse($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$puffle_name = $packet::$data[2];
+		
+		$penguin->send("%xt%checkpufflename%{$penguin->room->internal_id}%$puffle_name%1%");
 	}
 	
 	protected function handleCanLikeIgloo($socket, $packet) {
@@ -443,10 +520,16 @@ final class World extends ClubPenguin {
 		}
 	}
 	
-	// TODO: Work on puffle adoption so this actually does something
 	protected function handleGetPufflesByPlayerId($socket, $packet) {
 		$penguin = $this->penguins[$socket];
-		$penguin->send("%xt%pg%{$penguin->room->internal_id}%%");
+		$player_id = $packet::$data[2];
+		
+		if($penguin->database->playerIdExists($player_id)) {
+			$puffles = $penguin->database->getPuffles($player_id, true);
+			
+			// Doesn't necessarily have to be $player_id, I think?
+			$penguin->send("%xt%pg%{$penguin->room->internal_id}%$player_id%$puffles%");
+		}
 	}
 	
 	protected function handleGetGameData($socket, $packet) {
@@ -628,6 +711,8 @@ final class World extends ClubPenguin {
 		$penguin->x = $x;
 		$penguin->y = $y;
 		$this->rooms[$room_id]->add($penguin);
+		
+		$penguin->send("%xt%cerror%-1%Kitsune is a Club Penguin private server program written in PHP by Arthur designed to emulate the AS3 protocol.%Welcome%");
 	}
 	
 	private function getOpenRoom() {
@@ -672,7 +757,9 @@ final class World extends ClubPenguin {
 		$penguin->send("%xt%activefeatures%-1%");
 		$penguin->send("%xt%js%-1%1%0%0%1%");
 		$penguin->send("%xt%gps%-1%{$penguin->id}%");
-		$penguin->send("%xt%pgu%-1%");
+		
+		$puffles = $penguin->database->getPuffles($penguin->id);
+		$penguin->send("%xt%pgu%-1%$puffles%");
 		
 		$player_string = $penguin->getPlayerString();
 		$current_time = time();
@@ -682,6 +769,10 @@ final class World extends ClubPenguin {
 		
 		$open_room = $this->getOpenRoom();
 		$this->joinRoom($penguin, $open_room, 0, 0);
+		
+		if($penguin->walking_puffle != 0) {
+			$penguin->walkPuffle($penguin->walking_puffle, 1);
+		}
 		
 		// The 0 after the player id is probably a transformation id, will be looking into a proper implementation
 		$penguin->room->send("%xt%spts%-1%{$penguin->id}%0%{$penguin->avatar}%");
