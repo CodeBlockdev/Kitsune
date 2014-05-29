@@ -32,12 +32,19 @@ class Penguin {
 	
 	public $room;
 	
+	public $walking_puffle;
+	
 	public $socket;
 	public $database;
 	
 	public function __construct($socket) {
 		$this->socket = $socket;
 		$this->database = new Kitsune\Database();
+	}
+	
+	public function walkPuffle($puffle_id, $walk_boolean) {
+		$puffle = $this->database->getPuffleColumns($puffle_id, array("Type", "Subtype", "Hat"));
+		$this->room->send("%xt%pw%{$this->room->internal_id}%{$this->id}%$puffle_id%{$puffle["Type"]}%{$puffle["Hat"]}%$walk_boolean%{$puffle["Subtype"]}%");
 	}
 	
 	public function buyIgloo($igloo_id, $cost = 0) {
@@ -188,7 +195,7 @@ class Penguin {
 	public function loadPlayer() {
 		$this->random_key = null;
 		
-		$clothing = array("Color", "Head", "Face", "Neck", "Body", "Hand", "Feet", "Photo", "Flag");
+		$clothing = array("Color", "Head", "Face", "Neck", "Body", "Hand", "Feet", "Photo", "Flag", "Walking");
 		$player = array("Avatar", "RegistrationDate", "Inventory", "Coins");
 		$columns = array_merge($clothing, $player);
 		$player_array = $this->database->getColumnsByName($this->username, $columns);
@@ -198,6 +205,7 @@ class Penguin {
 		$this->avatar = $player_array["Avatar"];
 		$this->coins = $player_array["Coins"];
 		$this->inventory = explode('%', $player_array["Inventory"]);
+		$this->walking_puffle = $player_array["Walking"];
 	}
 	
 	public function getPlayerString() {
