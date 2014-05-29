@@ -4,6 +4,10 @@ namespace Kitsune\ClubPenguin;
 
 final class Login extends ClubPenguin {
 
+	public function __construct() {
+		echo "Login server is online\n";
+	}
+
 	protected function handleLogin($socket, $packet) {
 		$penguin = $this->penguins[$socket];
 		$username = $packet::$data['body']['login']['nick'];
