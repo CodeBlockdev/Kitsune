@@ -711,8 +711,6 @@ final class World extends ClubPenguin {
 		$penguin->x = $x;
 		$penguin->y = $y;
 		$this->rooms[$room_id]->add($penguin);
-		
-		$penguin->send("%xt%cerror%-1%Kitsune is a Club Penguin private server program written in PHP by Arthur designed to emulate the AS3 protocol.%Welcome%");
 	}
 	
 	private function getOpenRoom() {
@@ -776,6 +774,8 @@ final class World extends ClubPenguin {
 		
 		// The 0 after the player id is probably a transformation id, will be looking into a proper implementation
 		$penguin->room->send("%xt%spts%-1%{$penguin->id}%0%{$penguin->avatar}%");
+		
+		$penguin->send("%xt%cerror%-1%Kitsune is a Club Penguin private server program written in PHP by Arthur designed to emulate the AS3 protocol.%Welcome%");
 	}
 
 	protected function handleLogin($socket, $packet) {
