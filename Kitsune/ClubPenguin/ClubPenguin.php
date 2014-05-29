@@ -21,7 +21,7 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	}
 	
 	private function handleVersionCheck($socket, $packet) {
-		if($packet::$data["ver"]["@attributes"]["v"] == 153) {
+		if($packet::$data["body"]["ver"]["@attributes"]["v"] == 153) {
 			$this->penguins[$socket]->send("<msg t='sys'><body action='apiOK' r='0'></body></msg>");
 		} else {
 			$this->penguins[$socket]->send("<msg t='sys'><body action='apiKO' r='0'></body></msg>");
