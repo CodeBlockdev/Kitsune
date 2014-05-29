@@ -17,6 +17,112 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function updatePuffleColumn($puffle_id, $column, $value) {
+		try {
+			$update_puffle_column = $this->prepare("UPDATE `puffles` SET $column = :Value WHERE ID = :ID");
+			$update_puffle_column->bindValue(":Value", $value);
+			$update_puffle_column->bindValue(":ID", $puffle_id);
+			$update_puffle_column->execute();
+			$update_puffle_column->closeCursor();
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function puffleExists($puffle_id) {
+		try {
+			$puffle_exists_stmt = $this->prepare("SELECT ID FROM `puffles` WHERE ID = :ID");
+			$puffle_exists_stmt->bindValue(":ID", $puffle_id);
+			$puffle_exists_stmt->execute();
+			
+			$row_count = $puffle_exists_stmt->rowCount();
+			$puffle_exists_stmt->closeCursor();
+			
+			return $row_count > 0;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function getPuffles($owner_id, $igloo = false) {
+		try {
+			$get_puffles_stmt = $this->prepare("SELECT ID, Type, Subtype, Name, AdoptionDate, Food, Play, Rest, Clean, Hat FROM `puffles` WHERE Owner = :Owner");
+			$get_puffles_stmt->bindValue(":Owner", $owner_id);
+			$get_puffles_stmt->execute();
+			
+			$owned_puffles = $get_puffles_stmt->fetchAll(\PDO::FETCH_NUM);
+			$get_puffles_stmt->closeCursor();
+			
+			$puffles = implode('%', array_map(
+				function($puffle) use ($owner_id, $igloo) {
+					$walking_puffle = $this->getColumnById($owner_id, "Walking");
+					
+					if($igloo === true && $puffle[0] == $walking_puffle) {
+						return;
+					}
+					
+					$puffle = implode('|', $puffle);
+					if($igloo === true) {
+						$puffle .= "|0|0|0|0";
+					}
+					
+					return $puffle;
+				},
+				$owned_puffles));
+			
+			return $puffles;			
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function getPuffleColumns($puffle_id, array $columns) {
+		try {
+			$columns = implode(', ', $columns);
+			$get_puffle_stmt = $this->prepare("SELECT $columns FROM `puffles` WHERE ID = :Puffle");
+			$get_puffle_stmt->bindValue(":Puffle", $puffle_id);
+			$get_puffle_stmt->execute();
+			$columns = $get_puffle_stmt->fetch(\PDO::FETCH_ASSOC);
+			$get_puffle_stmt->closeCursor();
+			
+			return $columns;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+		
+	public function getPuffleColumn($puffle_id, $column) {
+		try {
+			$get_puffle_stmt = $this->prepare("SELECT $column FROM `puffles` WHERE ID = :Puffle");
+			$get_puffle_stmt->bindValue(":Puffle", $puffle_id);
+			$get_puffle_stmt->execute();
+			$get_puffle_stmt->bindColumn($column, $value);
+			$get_puffle_stmt->fetch(\PDO::FETCH_BOUND);
+			$get_puffle_stmt->closeCursor();
+			
+			return $value;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function adoptPuffle($owner_id, $puffle_name, $puffle_type, $puffle_subtype) {
+		try {
+			$adopt_puffle_stmt = $this->prepare("INSERT INTO `puffles` (`ID`, `Owner`, `Name`, `AdoptionDate`, `Type`, `Subtype`, `Hat`, `Food`, `Play`, `Rest`, `Clean`) VALUES (NULL, :Owner, :Name, UNIX_TIMESTAMP(), :Type, :Subtype, '0', '100', '100', '100', '100');");
+			$adopt_puffle_stmt->bindValue(":Owner", $owner_id);
+			$adopt_puffle_stmt->bindValue(":Name", $puffle_name);
+			$adopt_puffle_stmt->bindValue(":Type", $puffle_type);
+			$adopt_puffle_stmt->bindValue(":Subtype", $puffle_subtype);
+			$adopt_puffle_stmt->execute();
+			$adopt_puffle_stmt->closeCursor();
+			
+			$puffle_id = $this->lastInsertId();
+			return $puffle_id;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function getTotalIglooLikes($owner_id) {
 		try {
 			include "Misc/array_column.php";
