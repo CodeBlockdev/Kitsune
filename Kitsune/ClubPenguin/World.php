@@ -220,13 +220,23 @@ final class World extends ClubPenguin {
 			
 			foreach($likes as $like) {
 				if($like["id"] == $penguin->swid) {
-					$time_remaining = (time() - $like["time"]) * 1000;
+					$like_time = $like["time"];
 					
-					$can_like = array(
-						"canLike" => false,
-						"periodicity" => "ScheduleDaily",
-						"nextLike_msecs" => $time_remaining
-					);
+					if($like_time < strtotime("-1 day")) {
+						$can_like = array(
+							"canLike" => true,
+							"periodicity" => "ScheduleDaily",
+							"nextLike_msecs" => 0
+						);
+					} else {
+						$time_remaining = (time() - $like_time) * 1000;
+						
+						$can_like = array(
+							"canLike" => false,
+							"periodicity" => "ScheduleDaily",
+							"nextLike_msecs" => $time_remaining
+						);
+					}
 					
 					$can_like = json_encode($can_like);
 					$penguin->send("%xt%cli%{$penguin->room->internal_id}%$active_igloo%200%$can_like%");
@@ -260,6 +270,7 @@ final class World extends ClubPenguin {
 				foreach($igloo_likes as $like_index => $like) {
 					if($like["id"] == $penguin->swid) {
 						$like["count"] == ++$like["count"];
+						$like["time"] = time();
 						$igloo_likes[$like_index] = $like;
 						
 						break;
