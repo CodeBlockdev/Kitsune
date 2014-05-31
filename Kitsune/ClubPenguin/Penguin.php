@@ -32,7 +32,7 @@ class Penguin {
 	
 	public $room;
 	
-	public $walking_puffle;
+	public $walking_puffle = array();
 	
 	public $socket;
 	public $database;
@@ -43,8 +43,19 @@ class Penguin {
 	}
 	
 	public function walkPuffle($puffle_id, $walk_boolean) {
-		$puffle = $this->database->getPuffleColumns($puffle_id, array("Type", "Subtype", "Hat"));
-		$this->room->send("%xt%pw%{$this->room->internal_id}%{$this->id}%$puffle_id%{$puffle["Type"]}%{$puffle["Hat"]}%$walk_boolean%{$puffle["Subtype"]}%");
+		if($walk_boolean != 0) {
+			$this->walking_puffle = $this->database->getPuffleColumns($puffle_id, array("Type", "Subtype", "Hat"));
+			$this->walking_puffle = array_values($this->walking_puffle);
+			array_unshift($this->walking_puffle, $puffle_id);
+		}
+		
+		list($id, $type, $subtype, $hat) = $this->walking_puffle;
+		
+		if($walk_boolean == 0) {
+			$this->walking_puffle = array();
+		}
+		
+		$this->room->send("%xt%pw%{$this->room->internal_id}%{$this->id}%$id%$type%$subtype%$walk_boolean%$hat%");
 	}
 	
 	public function buyIgloo($igloo_id, $cost = 0) {
@@ -205,7 +216,12 @@ class Penguin {
 		$this->avatar = $player_array["Avatar"];
 		$this->coins = $player_array["Coins"];
 		$this->inventory = explode('%', $player_array["Inventory"]);
-		$this->walking_puffle = $player_array["Walking"];
+		
+		if($player_array["Walking"] != 0) {
+			$puffle = $this->database->getPuffleColumns($player_array["Walking"], array("Type", "Subtype", "Hat"));
+			$this->walking_puffle = array_values($puffle);
+			array_unshift($this->walking_puffle, $player_array["Walking"]);
+		}
 	}
 	
 	public function getPlayerString() {
@@ -227,8 +243,14 @@ class Penguin {
 			$this->frame,
 			1,
 			146,
-			$this->avatar
+			$this->avatar,
+			0
 		);
+		
+		if(!empty($this->walking_puffle)) {
+			list($id, $type, $subtype, $hat) = $this->walking_puffle;
+			array_push($player, $id, $type, $subtype, 0, $hat);
+		}
 		
 		return implode('|', $player);
 	}

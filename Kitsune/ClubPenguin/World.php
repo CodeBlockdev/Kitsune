@@ -54,7 +54,8 @@ final class World extends ClubPenguin {
 			"p#checkpufflename" => "handleCheckPuffleNameWithResponse",
 			"p#pn" => "handleAdoptPuffle",
 			"p#pgmps" => "handleGetMyPuffleStats",
-			"p#pw" => "handleSendPuffleWalk"
+			"p#pw" => "handleSendPuffleWalk",
+			"p#puffletrick" => "handlePuffleTrick"
 		)
 	);
 	
@@ -138,6 +139,15 @@ final class World extends ClubPenguin {
 			unset($igloos[$igloo_id]);
 		}
 		echo "done\n";
+	}
+	
+	protected function handlePuffleTrick($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$puffle_trick = $packet::$data[2];
+		
+		if(is_numeric($puffle_trick)) {
+			$penguin->room->send("%xt%puffletrick%{$penguin->room->internal_id}%{$penguin->id}%$puffle_trick%");
+		}
 	}
 	
 	protected function handleLoadIsPlayerIglooOpen($socket, $packet) {
@@ -767,15 +777,11 @@ final class World extends ClubPenguin {
 		
 		$open_room = $this->getOpenRoom();
 		$this->joinRoom($penguin, $open_room, 0, 0);
-		
-		if($penguin->walking_puffle != 0) {
-			$penguin->walkPuffle($penguin->walking_puffle, 1);
-		}
-		
+				
 		// The 0 after the player id is probably a transformation id, will be looking into a proper implementation
 		$penguin->room->send("%xt%spts%-1%{$penguin->id}%0%{$penguin->avatar}%");
 		
-		$penguin->send("%xt%cerror%-1%Kitsune is a Club Penguin private server program written in PHP by Arthur designed to emulate the AS3 protocol.%Welcome%");
+		$penguin->send("%xt%cberror%-1%Kitsune is a Club Penguin private server program written in PHP by Arthur designed to emulate the AS3 protocol.%Welcome%");
 	}
 
 	protected function handleLogin($socket, $packet) {
