@@ -2,12 +2,19 @@
 
 namespace Kitsune\ClubPenguin;
 
+error_reporting(E_ALL ^ E_STRICT);
+
 spl_autoload_register(function ($path) {
-	require_once $path . ".php";
+	$realPath = str_replace("\\", "/", $path) . ".php";
+	$includeSuccess = include_once $realPath;
+	
+	if(!$includeSuccess) {
+		echo "Unable to load $realPath\n";
+	}
 });
 
 $cp = new Login();
-$cp->listen("127.0.0.1", 6112);
+$cp->listen(0, 6112);
 while(true) {
 	$cp->acceptClients();
 }
