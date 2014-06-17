@@ -55,6 +55,7 @@ final class World extends ClubPenguin {
 			"p#pn" => "handleAdoptPuffle",
 			"p#pgmps" => "handleGetMyPuffleStats",
 			"p#pw" => "handleSendPuffleWalk",
+			"p#pufflewalkswap" => "handlePuffleSwap",
 			"p#puffletrick" => "handlePuffleTrick"
 		)
 	);
@@ -182,6 +183,20 @@ final class World extends ClubPenguin {
 		}
 	}
 	
+	protected function handlePuffleSwap($socket, $packet) {
+		$penguin = $this->penguins[$socket];
+		$puffle_id = $packet::$data[2];
+		
+		if(is_numeric($puffle_id) && $penguin->database->puffleExists($puffle_id)) {
+			$puff_info = $penguin->database->getPuffleColumns($puffle_id, array("Type", "Subtype", "Hat"));
+			$penguin->room->send("%xt%pufflewalkswap%{$penguin->room->internal_id}%{$penguin->id}%$puffle_id%{$puff_info["Type"]}%{$puff_info["Subtype"]}%1%{$puff_info["Hat"]}%");
+			$penguin->database->updateColumnById($penguin->id, "Walking", $puffle_id);
+			$penguin->walking_puffle = $penguin->database->getPuffleColumns($puffle_id, array("Type", "Subtype", "Hat") );
+			$penguin->walking_puffle = array_values($penguin->walking_puffle);
+			array_unshift($penguin->walking_puffle, $puffle_id);
+		}
+	}
+	
 	protected function handleGetMyPuffleStats($socket, $packet) {
 		echo "TODO: Work on handleGetMyPuffleStats\n";
 	}
@@ -200,6 +215,10 @@ final class World extends ClubPenguin {
 			$puffle_id = $penguin->database->adoptPuffle($penguin->id, $puffle_name, $puffle_type, $puffle_subtype);
 			$adoption_date = time();
 			$penguin->send("%xt%pn%{$penguin->room->internal_id}%1059%$puffle_id|$puffle_type||$puffle_name|$adoption_date|100|100|100|100|0|0|0|1|%");
+			$penguin->database->updateColumnById($penguin->id, "Walking", $puffle_id);
+			$penguin->walking_puffle = $penguin->database->getPuffleColumns($puffle_id, array("Type", "Subtype", "Hat") );
+			$penguin->walking_puffle = array_values($penguin->walking_puffle);
+			array_unshift($penguin->walking_puffle, $puffle_id);
 		}
 	}
 	
