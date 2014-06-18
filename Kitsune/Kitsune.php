@@ -1,15 +1,16 @@
 <?php
 
 namespace Kitsune;
-use Kitsune\ClubPenguin;
-use Kitsune\ClubPenguin\Packets;
+
+use Kitsune\ClubPenguin\Penguin;
+use Kitsune\ClubPenguin\Packets\Packet;
 
 abstract class Kitsune extends Spirit {
 
 	protected $penguins = array();
 	
 	protected function handleAccept($socket) {
-		$new_penguin = new ClubPenguin\Penguin($socket);
+		$new_penguin = new Penguin($socket);
 		$this->penguins[$socket] = $new_penguin;
 	}
 	
@@ -20,15 +21,17 @@ abstract class Kitsune extends Spirit {
 	
 	protected function handleReceive($socket, $data) {
 		echo "$data\n";
-		$chunked_array = explode("\0", $data);
-		array_pop($chunked_array);
 		
-		foreach($chunked_array as $raw_data) {
-			$packet = new Packets\Packet($raw_data);
-			if($packet::$is_xml) {
-				$this->handleXmlPacket($socket, $packet);
+		$chunkedArray = explode("\0", $data);
+		array_pop($chunkedArray);
+		
+		foreach($chunkedArray as $rawData) {
+			$packet = Packet::Parse($rawData);
+			
+			if(Packet::$IsXML) {
+				$this->handleXmlPacket($socket);
 			} else {
-				$this->handleWorldPacket($socket, $packet);
+				$this->handleWorldPacket($socket);
 			}
 		}
 	}
@@ -38,8 +41,8 @@ abstract class Kitsune extends Spirit {
 		unset($this->players[$penguin->socket]);
 	}
 	
-	abstract protected function handleXmlPacket($socket, $packet);
-	abstract protected function handleWorldPacket($socket, $packet);
+	abstract protected function handleXmlPacket($socket);
+	abstract protected function handleWorldPacket($socket);
 	
 }
 
