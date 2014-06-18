@@ -5,31 +5,48 @@ use Kitsune\ClubPenguin\Packets\Parsers;
 
 class Packet {
 
-	public static $is_xml;
-	public static $extension;
-	public static $handler;
-	public static $data;
+	public static $IsXML;
+	public static $Extension;
+	public static $Handler;
+	public static $Data;
+	public static $RawData;
 	
-	public function __construct($raw_data) {
-		$first_character = substr($raw_data, 0, 1);
-		self::$is_xml = $first_character == '<';
+	private static $Instance;
+	
+	public static function GetInstance() {
+		if(self::$Instance == null) {
+			self::$Instance = new Packet();
+			Packet::Parse(self::$RawData);
+		}
 		
-		if(self::$is_xml) {
-			$xml_array = Parsers\XMLParser::parse($raw_data);
-			if(!$xml_array) {
-				self::$handler = "policy";
+		return self::$Instance;
+	}
+	
+	public static function Parse($rawData) {
+		$firstCharacter = substr($rawData, 0, 1);
+		self::$IsXML = $firstCharacter == '<';
+		
+		if(self::$IsXML) {
+			$xmlArray = Parsers\XMLParser::Parse($rawData);
+			if(!$xmlArray) {
+				self::$Handler = "policy";
 			} else {
-				self::$handler = $xml_array["body"]["@attributes"]["action"];
-				self::$data = $xml_array;
+				self::$Handler = $xmlArray["body"]["@attributes"]["action"];
+				self::$Data = $xmlArray;
 			}
+			self::$RawData = $rawData;
 		} else {
-			$xt_array = Parsers\XTParser::parse($raw_data);
-			self::$extension = $xt_array[0];
-			self::$handler = $xt_array[1];
-			array_shift($xt_array);
+			$xtArray = Parsers\XTParser::Parse($rawData);
 			
-			self::$data = $xt_array;
+			self::$Extension = $xtArray[0];
+			self::$Handler = $xtArray[1];
+			array_shift($xtArray);
+			
+			self::$Data = $xtArray;
+			self::$RawData = $rawData;
 		}
 	}
 	
 }
+
+?>
