@@ -4,11 +4,11 @@ namespace Kitsune\ClubPenguin\Packets\Parsers;
 
 class XMLParser {
 
-	public static function parse($xml_data) {
-		$xml_object = simplexml_load_string($xml_data, "SimpleXMLElement", LIBXML_NOCDATA);
-		$xml_array = json_decode(json_encode($xml_object), true);
+	public static function Parse($xmlData) {
+		$simpleXml = simplexml_load_string($xmlData, "SimpleXMLElement", LIBXML_NOCDATA);
+		$xmlArray = json_decode(json_encode($simpleXml), true);
 		
-		return $xml_array;
+		return $xmlArray;
 	}
 	
 }
