@@ -4,13 +4,13 @@ namespace Kitsune\ClubPenguin\Packets\Parsers;
 
 class XTParser {
 
-	public static function parse($xt_data) {
-		$xt_array = explode('%', $xt_data);
-		array_shift($xt_array);
-		array_shift($xt_array);
-		array_pop($xt_array);
+	public static function Parse($xtData) {
+		$xtArray = explode('%', $xtData);
+		array_shift($xtArray);
+		array_shift($xtArray);
+		array_pop($xtArray);
 		
-		return $xt_array;
+		return $xtArray;
 	}
 	
 }
