@@ -243,13 +243,13 @@ class Penguin {
 			$this->frame,
 			1,
 			146,
-			$this->avatar,
-			0
+			0,
+			$this->avatar
 		);
 		
 		if(!empty($this->walking_puffle)) {
 			list($id, $type, $subtype, $hat) = $this->walking_puffle;
-			array_push($player, $id, $type, $subtype, 0, $hat);
+			array_push($player, $id, $type, $subtype, $hat, 0);
 		}
 		
 		return implode('|', $player);
