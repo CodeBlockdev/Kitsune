@@ -2,6 +2,7 @@
 
 namespace Kitsune;
 
+use Kitsune\Logging\Logger;
 use Kitsune\ClubPenguin\Penguin;
 use Kitsune\ClubPenguin\Packets\Packet;
 
@@ -10,17 +11,17 @@ abstract class Kitsune extends Spirit {
 	protected $penguins = array();
 	
 	protected function handleAccept($socket) {
-		$new_penguin = new Penguin($socket);
-		$this->penguins[$socket] = $new_penguin;
+		$newPenguin = new Penguin($socket);
+		$this->penguins[$socket] = $newPenguin;
 	}
 	
 	protected function handleDisconnect($socket) {
 		unset($this->penguins[$socket]);
-		echo "Player disconnected\n";
+		Logger::Notice("Player disconnected");
 	}
 	
 	protected function handleReceive($socket, $data) {
-		echo "$data\n";
+		Logger::Debug("Received $data");
 		
 		$chunkedArray = explode("\0", $data);
 		array_pop($chunkedArray);
@@ -38,7 +39,7 @@ abstract class Kitsune extends Spirit {
 	
 	protected function removePenguin($penguin) {
 		$this->removeClient($penguin->socket);
-		unset($this->players[$penguin->socket]);
+		unset($this->penguins[$penguin->socket]);
 	}
 	
 	abstract protected function handleXmlPacket($socket);
