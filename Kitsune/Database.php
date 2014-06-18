@@ -17,6 +17,45 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function sendChangePuffleRoom($puffleId, $toBackground) {
+		try {
+			$changePuffleRoom = $this->prepare("UPDATE `puffles` SET `Backyard` = :Backyard WHERE `ID` = :Puffle");
+			$changePuffleRoom->bindValue(":Backyard", $toBackground);
+			$changePuffleRoom->bindValue(":Puffle", $puffleId);
+			$changePuffleRoom->execute();
+			$changePuffleRoom->closeCursor();
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
+	public function ownsPuffle($puffleId, $ownerId) {
+		try {
+			$ownsPuffle = $this->prepare("SELECT Owner FROM `puffles` WHERE ID = :Puffle");
+			$ownsPuffle->bindValue(":Puffle", $puffleId);
+			$ownsPuffle->execute();
+			
+			$rowCount = $ownsPuffle->rowCount();
+			if($rowCount == 0) {
+				$ownsPuffle->closeCursor();
+				
+				return false;
+			}
+			
+			list($puffleOwner) = $ownsPuffle->fetch(\PDO::FETCH_NUM);
+			$ownsPuffle->closeCursor();
+			
+			if($puffleOwner == $ownerId) {
+				return true;
+			}
+			
+			echo "Player does not own puffle!\n";
+			return false;
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+	
 	public function updatePuffleColumn($puffle_id, $column, $value) {
 		try {
 			$update_puffle_column = $this->prepare("UPDATE `puffles` SET $column = :Value WHERE ID = :ID");
@@ -44,33 +83,54 @@ class Database extends \PDO {
 		}
 	}
 	
-	public function getPuffles($owner_id, $igloo = false) {
+	public function getPuffles($playerId, $roomType) {
 		try {
-			$get_puffles_stmt = $this->prepare("SELECT ID, Type, Subtype, Name, AdoptionDate, Food, Play, Rest, Clean, Hat FROM `puffles` WHERE Owner = :Owner");
-			$get_puffles_stmt->bindValue(":Owner", $owner_id);
-			$get_puffles_stmt->execute();
+			$isBackyard = intval($roomType == "backyard");
 			
-			$owned_puffles = $get_puffles_stmt->fetchAll(\PDO::FETCH_NUM);
-			$get_puffles_stmt->closeCursor();
+			$getPuffles = $this->prepare("SELECT ID, Type, Subtype, Name, AdoptionDate, Food, Play, Rest, Clean, Hat FROM `puffles` WHERE Owner = :Owner AND Backyard = :Backyard");
+			$getPuffles->bindValue(":Owner", $playerId);
+			$getPuffles->bindValue(":Backyard", $isBackyard);
+			$getPuffles->execute();
+			
+			$playerPuffles = $getPuffles->fetchAll(\PDO::FETCH_NUM);
+			$getPuffles->closeCursor();
+			
+			$walkingPuffle = $this->getColumnById($playerId, "Walking");
 			
 			$puffles = implode('%', array_map(
-				function($puffle) use ($owner_id, $igloo) {
-					$walking_puffle = $this->getColumnById($owner_id, "Walking");
+				function($puffle) use ($playerId, $walkingPuffle) {
+					list($puffleId) = $puffle;
 					
-					if($igloo === true && $puffle[0] == $walking_puffle) {
-						return;
+					if($puffleId !== $walkingPuffle) {					
+						$puffle = implode('|', $puffle) . "|0|0|0|0";
+						
+						return $puffle;
 					}
-					
-					$puffle = implode('|', $puffle);
-					if($igloo === true) {
-						$puffle .= "|0|0|0|0";
-					}
-					
-					return $puffle;
 				},
-				$owned_puffles));
+				$playerPuffles));
 			
 			return $puffles;			
+		} catch(\PDOException $pdo_exception) {
+			echo "{$pdo_exception->getMessage()}\n";
+		}
+	}
+
+	public function getPlayerPuffles($playerId) {
+		try {
+			$getPlayerPuffles = $this->prepare("SELECT ID, Type, Subtype, Name, AdoptionDate, Food, Play, Rest, Clean, Hat FROM `puffles` WHERE Owner = :Player");
+			$getPlayerPuffles->bindValue(":Player", $playerId);
+			$getPlayerPuffles->execute();
+			
+			$playerPufflesArray = $getPlayerPuffles->fetchAll(\PDO::FETCH_NUM);
+			$getPlayerPuffles->closeCursor();
+			
+			$playerPuffles = implode('%', array_map(
+				function($puffle) {
+					return implode('|', $puffle);
+				},
+				$playerPufflesArray));
+			
+			return $playerPuffles;
 		} catch(\PDOException $pdo_exception) {
 			echo "{$pdo_exception->getMessage()}\n";
 		}
