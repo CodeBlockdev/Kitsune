@@ -2,18 +2,21 @@
 
 namespace Kitsune\ClubPenguin;
 
+use Kitsune\ClubPenguin\Packets\Packet;
+
 final class Login extends ClubPenguin {
 
 	public function __construct() {
 		echo "Login server is online\n";
 	}
 
-	protected function handleLogin($socket, $packet) {
+	protected function handleLogin($socket) {
 		$penguin = $this->penguins[$socket];
-		$username = $packet::$data['body']['login']['nick'];
-		$password = $packet::$data['body']['login']['pword'];
+		$username = Packet::$Data['body']['login']['nick'];
+		$password = Packet::$Data['body']['login']['pword'];
 		
 		echo "$username is attempting to login\n";
+		
 		if($penguin->database->usernameExists($username) === false) {
 			$penguin->send("%xt%e%-1%101%");
 			return $this->removePenguin($penguin);
@@ -21,6 +24,7 @@ final class Login extends ClubPenguin {
 		
 		$penguin_data = $penguin->database->getColumnsByName($username, array("ID", "Username", "Password", "SWID", "Email"));
 		$encrypted_password = Hashing::getLoginHash($penguin_data["Password"], $penguin->random_key);
+		
 		if($encrypted_password != $password) {
 			$penguin->send("%xt%e%-1%101%");
 			return $this->removePenguin($penguin);
