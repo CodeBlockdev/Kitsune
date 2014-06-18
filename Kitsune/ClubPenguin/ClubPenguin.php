@@ -3,6 +3,7 @@
 namespace Kitsune\ClubPenguin;
 
 use Kitsune;
+use Kitsune\Logging\Logger;
 use Kitsune\ClubPenguin\Packets\Packet;
 
 abstract class ClubPenguin extends Kitsune\Kitsune {
@@ -32,8 +33,8 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	
 	private function handleRandomKey($socket) {
 		$penguin = $this->penguins[$socket];
-		$penguin->random_key = Hashing::generateRandomKey();
-		$penguin->send("<msg t='sys'><body action='rndK' r='-1'><k>" . $penguin->random_key . "</k></body></msg>");
+		$penguin->randomKey = Hashing::generateRandomKey();
+		$penguin->send("<msg t='sys'><body action='rndK' r='-1'><k>" . $penguin->randomKey . "</k></body></msg>");
 	}
 	
 	abstract protected function handleLogin($socket);
@@ -45,7 +46,7 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		} else {
 			$xmlPacket = Packet::GetInstance();
 			
-			echo "Method for {$xmlPacket::$Handler} not found!\n";
+			Logger::Warn("Method for {$xmlPacket::$Handler} not found!");
 		}
 	}
 	
@@ -59,16 +60,16 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 						if(method_exists($this, $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
 							call_user_func(array($this, $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler]), $socket);
 						} else {
-							echo "Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} is un-callable!\n";
+							Logger::Warn("Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} is un-callable!");
 						}
 					} else {
-						echo "Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} doesn't exist/has not been set\n";
+						Logger::Warn("Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} doesn't exist/has not been set");
 					}
 				} else {
-					echo "There are no handlers for {$worldPacket::$Extension}\n";
+					Logger::Warn("There are no handlers for {$worldPacket::$Extension}");
 				}
 			} else {
-				echo "The packet extension '{$worldPacket::$Extension}' is not handled\n";
+				Logger::Warn("The packet extension '{$worldPacket::$Extension}' is not handled");
 			}
 		} else {
 			$this->removePenguin($this->penguins[$socket]);
