@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 18, 2014 at 03:44 AM
+-- Generation Time: Jun 19, 2014 at 12:00 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -37,17 +37,14 @@ CREATE TABLE IF NOT EXISTS `igloos` (
   `Likes` text NOT NULL,
   `Locked` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=8 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=2 ;
 
 --
 -- Dumping data for table `igloos`
 --
 
 INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES
-(1, 101, 30, 21, 0, '835|293|371|1|1,2226|499|243|1|1,2235|121|308|1|1,2235|143|396|1|1,919|394|435|1|1', 6, '[{"id":"{de2da5a4-6d83-c05e-b774-0ab3773f5795}","time":1400955825,"count":2,"isFriend":false}]', 0),
-(2, 102, 50, 0, 0, '970|383|424|3|1,908|237|92|2|1', 6, '[{"id":"{747e5e06-12ff-283a-6f6a-5e5e77cf7b7f}","time":1400960145,"count":1,"isFriend":false},{"id":"{de2da5a4-6d83-c05e-b774-0ab3773f5795}","time":1400960156,"count":2,"isFriend":false}]', 0),
-(6, 101, 73, 0, 0, '835|413|379|1|1,838|162|307|1|1,2226|580|159|1|1,834|527|359|1|1,908|274|112|2|1,919|175|362|1|1', 6, '[{"id":"{de2da5a4-6d83-c05e-b774-0ab3773f5795}","time":1400957599,"count":2,"isFriend":false},{"id":"{747e5e06-12ff-283a-6f6a-5e5e77cf7b7f}","time":1400960244,"count":1,"isFriend":false}]', 0),
-(7, 101, 28, 14, 0, '908|634|242|2|1,966|187|188|1|1,2226|368|277|4|1', 6, '[]', 0);
+(1, 101, 30, 21, 645, '574|308|207|1|1,919|512|429|1|1,2235|117|265|1|1,2235|113|359|1|1,2226|155|203|1|1,2227|381|401|1|1,2229|312|398|3|1,2231|553|185|1|3', 6, '[{"id":"{045d200e-a48d-3a28-456e-6fc4e42a5afb}","time":1403128004,"count":1,"isFriend":false}]', 1);
 
 -- --------------------------------------------------------
 
@@ -66,6 +63,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Avatar` char(98) NOT NULL DEFAULT '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}',
   `Email` char(254) NOT NULL,
   `RegistrationDate` int(8) NOT NULL,
+  `Moderator` tinyint(1) NOT NULL DEFAULT '0',
   `Inventory` text NOT NULL,
   `Coins` mediumint(7) unsigned NOT NULL DEFAULT '200000',
   `Igloo` int(10) unsigned NOT NULL COMMENT 'Current active igloo',
@@ -85,15 +83,14 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Walking` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Puffle ID',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=103 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=102 ;
 
 --
 -- Dumping data for table `penguins`
 --
 
-INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`, `Walking`) VALUES
-(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.org', 1399248450, '1%2%3%4%711%712%9%9088%9262%9260%9037%210%1539%717%2151%24090%1865%1864%24089%24088%1863%24059%24060%1866%24091%4790%4533%1528%5374%2109%1867%24092%6036%1837%24056%24055%1836%6112%1840%3108%3203%3114%3111%3202%1847%1845%3206%1368%1367%1363%1360%1361%303%1373%1372%1846%1844%1853%4560%7188%501%3032%821%8006%8010%8011%8009%8009%8009%3207%8009%8009%8009%8009', 968525, 1, '1|0,73|1400445126,28|1400451813,30|1400451830', '14|1400443221,21|1400443224,7|1400443228', '6|1400351014', '966||1,2226||1,908||1,838||1,834||1,167||1,835||1,919|1400917194|1,2232|1400917197|1,2235|1400917202|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9037, 0, 0),
-(102, 'Blackhole', 'Blackhole', 'DC647EB65E6711E155375218212B3964', '', '', '{747e5e06-12ff-283a-6f6a-5e5e77cf7b7f}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'black@hole.org', 1400118790, '4%413%221', 193450, 2, '|,50|1400960069,30|1400960085', '', '|,6|1400960049', '||,970|1400960054|1,908|1400960059|1', 4, 413, 0, 0, 0, 0, 0, 0, 0, 0);
+INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Moderator`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`, `Walking`) VALUES
+(101, 'Steffaloo', 'Steffaloo', 'DC647EB65E6711E155375218212B3964', '', '', '{045d200e-a48d-3a28-456e-6fc4e42a5afb}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.me', 1402955932, 1, '4%24059%24060%5374%2109%6036%1840%1841%501%9259', 190320, 1, '|,30|1403128079', '|,21|1403128083', '|,6|1403128029', '||,2226|1403128043|1,2227|1403128051|1,2230|1403128039|1,2231|1403128041|1,2229|1403128049|1,2228|1403128047|1,2235|1403128056|1,919|1403128058|1,908|1403128066|1,574|1403128074|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9259, 501, 0);
 
 -- --------------------------------------------------------
 
@@ -115,15 +112,15 @@ CREATE TABLE IF NOT EXISTS `puffles` (
   `Clean` tinyint(3) unsigned NOT NULL DEFAULT '100',
   `Backyard` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=6 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
 
 --
 -- Dumping data for table `puffles`
 --
 
 INSERT INTO `puffles` (`ID`, `Owner`, `Name`, `AdoptionDate`, `Type`, `Subtype`, `Hat`, `Food`, `Play`, `Rest`, `Clean`, `Backyard`) VALUES
-(4, 101, 'Fantasy', 1401051007, 5, 0, 46, 100, 100, 100, 100, 0),
-(5, 101, 'Never', 1401393929, 8, 1007, 0, 100, 100, 100, 100, 1);
+(1, 101, 'Howdy', 1403127843, 8, 1007, 0, 100, 100, 100, 100, 0),
+(2, 101, 'Doge', 1403127876, 0, 1006, 0, 100, 100, 100, 100, 1);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
