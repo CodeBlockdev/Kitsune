@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: May 31, 2014 at 04:47 AM
+-- Generation Time: Jun 18, 2014 at 03:44 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
 --
 
 INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`, `Walking`) VALUES
-(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.org', 1399248450, '1%2%3%4%711%712%9%9088%9262%9260%9037%210%1539%717%2151%24090%1865%1864%24089%24088%1863%24059%24060%1866%24091%4790%4533%1528%5374%2109%1867%24092%6036%1837%24056%24055%1836%6112%1840%3108%3203%3114%3111%3202%1847%1845%3206%1368%1367%1363%1360%1361%303%1373%1372%1846%1844%1853%4560%7188%501%3032%821%8006%8010%8011%8009%8009%8009%3207%8009%8009%8009%8009', 968525, 1, '1|0,73|1400445126,28|1400451813,30|1400451830', '14|1400443221,21|1400443224,7|1400443228', '6|1400351014', '966||1,2226||1,908||1,838||1,834||1,167||1,835||1,919|1400917194|1,2232|1400917197|1,2235|1400917202|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9037, 0, 5),
+(101, 'Arthur', 'Arthur', 'DC647EB65E6711E155375218212B3964', '', '', '{de2da5a4-6d83-c05e-b774-0ab3773f5795}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.org', 1399248450, '1%2%3%4%711%712%9%9088%9262%9260%9037%210%1539%717%2151%24090%1865%1864%24089%24088%1863%24059%24060%1866%24091%4790%4533%1528%5374%2109%1867%24092%6036%1837%24056%24055%1836%6112%1840%3108%3203%3114%3111%3202%1847%1845%3206%1368%1367%1363%1360%1361%303%1373%1372%1846%1844%1853%4560%7188%501%3032%821%8006%8010%8011%8009%8009%8009%3207%8009%8009%8009%8009', 968525, 1, '1|0,73|1400445126,28|1400451813,30|1400451830', '14|1400443221,21|1400443224,7|1400443228', '6|1400351014', '966||1,2226||1,908||1,838||1,834||1,167||1,835||1,919|1400917194|1,2232|1400917197|1,2235|1400917202|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9037, 0, 0),
 (102, 'Blackhole', 'Blackhole', 'DC647EB65E6711E155375218212B3964', '', '', '{747e5e06-12ff-283a-6f6a-5e5e77cf7b7f}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'black@hole.org', 1400118790, '4%413%221', 193450, 2, '|,50|1400960069,30|1400960085', '', '|,6|1400960049', '||,970|1400960054|1,908|1400960059|1', 4, 413, 0, 0, 0, 0, 0, 0, 0, 0);
 
 -- --------------------------------------------------------
@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS `puffles` (
   `Play` tinyint(3) unsigned NOT NULL DEFAULT '100',
   `Rest` tinyint(3) unsigned NOT NULL DEFAULT '100',
   `Clean` tinyint(3) unsigned NOT NULL DEFAULT '100',
+  `Backyard` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=6 ;
 
@@ -120,9 +121,9 @@ CREATE TABLE IF NOT EXISTS `puffles` (
 -- Dumping data for table `puffles`
 --
 
-INSERT INTO `puffles` (`ID`, `Owner`, `Name`, `AdoptionDate`, `Type`, `Subtype`, `Hat`, `Food`, `Play`, `Rest`, `Clean`) VALUES
-(4, 101, 'Fantasy', 1401051007, 5, 0, 46, 100, 100, 100, 100),
-(5, 101, 'Never', 1401393929, 8, 1007, 0, 100, 100, 100, 100);
+INSERT INTO `puffles` (`ID`, `Owner`, `Name`, `AdoptionDate`, `Type`, `Subtype`, `Hat`, `Food`, `Play`, `Rest`, `Clean`, `Backyard`) VALUES
+(4, 101, 'Fantasy', 1401051007, 5, 0, 46, 100, 100, 100, 100, 0),
+(5, 101, 'Never', 1401393929, 8, 1007, 0, 100, 100, 100, 100, 1);
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
