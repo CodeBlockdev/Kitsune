@@ -6,27 +6,27 @@ class Room {
 
 	public $penguins = array();
 	
-	public $external_id;
-	public $internal_id;
+	public $externalId;
+	public $internalId;
 	
-	public function __construct($external_id, $internal_id) {
-		$this->external_id = $external_id;
-		$this->internal_id = $internal_id;
+	public function __construct($externalId, $internalId) {
+		$this->externalId = $externalId;
+		$this->internalId = $internalId;
 	}
 	
 	public function add($penguin) {
 		array_push($this->penguins, $penguin);
 		
 		$room_string = $this->getRoomString();
-		$penguin->send("%xt%jr%{$this->internal_id}%{$this->external_id}%$room_string%");
-		$this->send("%xt%ap%{$this->internal_id}%{$penguin->getPlayerString()}%");
+		$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$room_string%");
+		$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
 		$penguin->room = $this;
 	}
 	
 	public function remove($penguin) {
 		$player_index = array_search($penguin, $this->penguins);
 		unset($this->penguins[$player_index]);
-		$this->send("%xt%rp%{$this->internal_id}%{$penguin->id}%");
+		$this->send("%xt%rp%{$this->internalId}%{$penguin->id}%");
 	}
 	
 	public function send($data) {
