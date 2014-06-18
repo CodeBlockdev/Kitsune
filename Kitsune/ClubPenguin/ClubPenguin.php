@@ -1,68 +1,74 @@
 <?php
 
 namespace Kitsune\ClubPenguin;
+
 use Kitsune;
+use Kitsune\ClubPenguin\Packets\Packet;
 
 abstract class ClubPenguin extends Kitsune\Kitsune {
 
-	private static $xml_handlers = array(
+	private $xmlHandlers = array(
 		"policy" => "handlePolicyRequest",
 		"verChk" => "handleVersionCheck",
 		"rndK" => "handleRandomKey",
 		"login" => "handleLogin"
 	);
 	
-	protected $world_handlers = array(
+	protected $worldHandlers = array(
 		// Overridden in the World class
 	);
 	
-	private function handlePolicyRequest($socket, $packet) {
-		$this->penguins[$socket]->send("<cross-domain-policy><allow-access-from domain='*' to-ports='*' /></cross-domain-policy>");
+	private function handlePolicyRequest($socket) {
+		$this->penguins[$socket]->send("<cross-domain-policy><allow-access-from domain='*' to-ports='{$this->port}' /></cross-domain-policy>");
 	}
 	
-	private function handleVersionCheck($socket, $packet) {
-		if($packet::$data["body"]["ver"]["@attributes"]["v"] == 153) {
+	private function handleVersionCheck($socket) {
+		if(Packet::$Data["body"]["ver"]["@attributes"]["v"] == 153) {
 			$this->penguins[$socket]->send("<msg t='sys'><body action='apiOK' r='0'></body></msg>");
 		} else {
 			$this->penguins[$socket]->send("<msg t='sys'><body action='apiKO' r='0'></body></msg>");
 		}
 	}
 	
-	private function handleRandomKey($socket, $packet) {
+	private function handleRandomKey($socket) {
 		$penguin = $this->penguins[$socket];
 		$penguin->random_key = Hashing::generateRandomKey();
 		$penguin->send("<msg t='sys'><body action='rndK' r='-1'><k>" . $penguin->random_key . "</k></body></msg>");
 	}
 	
-	abstract protected function handleLogin($socket, $packet);
+	abstract protected function handleLogin($socket);
 	
-	protected function handleXmlPacket($socket, $packet) {
-		if(array_key_exists($packet::$handler, self::$xml_handlers)) {
-			$method = self::$xml_handlers[$packet::$handler];
-			call_user_func(array($this, $method), $socket, $packet);
+	protected function handleXmlPacket($socket) {
+		if(array_key_exists(Packet::$Handler, $this->xmlHandlers)) {
+			$method = $this->xmlHandlers[Packet::$Handler];
+			call_user_func(array($this, $method), $socket);
 		} else {
-			echo "Method for {$packet::$handler} not found!\n";
+			$xmlPacket = Packet::GetInstance();
+			
+			echo "Method for {$xmlPacket::$Handler} not found!\n";
 		}
 	}
 	
-	protected function handleWorldPacket($socket, $packet) {
+	protected function handleWorldPacket($socket) {
 		if($this->penguins[$socket]->identified == true) {
-			if(isset($this->world_handlers[$packet::$extension])) {
-				if(!empty($this->world_handlers[$packet::$extension])) {
-					if(isset($this->world_handlers[$packet::$extension][$packet::$handler])) {
-						if(method_exists($this, $this->world_handlers[$packet::$extension][$packet::$handler])) {
-							call_user_func(array($this, $this->world_handlers[$packet::$extension][$packet::$handler]), $socket, $packet);
+			$worldPacket = Packet::GetInstance();
+			
+			if(isset($this->worldHandlers[$worldPacket::$Extension])) {
+				if(!empty($this->worldHandlers[$worldPacket::$Extension])) {
+					if(isset($this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
+						if(method_exists($this, $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
+							call_user_func(array($this, $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler]), $socket);
 						} else {
-							echo "Method for {$packet::$extension}%{$packet::$handler} is un-callable!\n";
+							echo "Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} is un-callable!\n";
 						}
 					} else {
-						echo "Method for {$packet::$extension}%{$packet::$handler} doesn't exist/has not been set\n";
+						echo "Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} doesn't exist/has not been set\n";
 					}
 				} else {
-					echo "There are no handlers for {$packet::$extension}\n";
+					echo "There are no handlers for {$worldPacket::$Extension}\n";
 				}
 			} else {
-				echo "The packet extension '{$packet::$extension}' is not handled\n";
+				echo "The packet extension '{$worldPacket::$Extension}' is not handled\n";
 			}
 		} else {
 			$this->removePenguin($this->penguins[$socket]);
