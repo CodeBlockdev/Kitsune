@@ -6,15 +6,15 @@ abstract class Spirit {
 
 	protected $sockets = array();
 	protected $port;
-	protected $master_socket;
+	protected $masterSocket;
 
 	private function accept() {
-		$client_socket = socket_accept($this->master_socket);
-		socket_set_option($client_socket, SOL_SOCKET, SO_REUSEADDR, 1);
-		socket_set_nonblock($client_socket);
-		$this->sockets[] = $client_socket;
+		$clientSocket = socket_accept($this->masterSocket);
+		socket_set_option($clientSocket, SOL_SOCKET, SO_REUSEADDR, 1);
+		socket_set_nonblock($clientSocket);
+		$this->sockets[] = $clientSocket;
 		
-		return $client_socket;
+		return $clientSocket;
 	}
 
 	protected function handleAccept($socket) {
@@ -42,26 +42,27 @@ abstract class Spirit {
 		socket_bind($socket, $address, $port);
 		socket_listen($socket, $backlog);
 
-		$this->master_socket = $socket;
+		$this->masterSocket = $socket;
 		$this->port = $port;
 	}
 
 	public function acceptClients() {
-		$sockets = array_merge(array($this->master_socket), $this->sockets);
+		$sockets = array_merge(array($this->masterSocket), $this->sockets);
 		$tv_usec = mt_rand(20, 70);
-		$changed_sockets = socket_select($sockets, $write, $except, $tv_usec);
-		if($changed_sockets === 0) {
+		$changedSockets = socket_select($sockets, $write, $except, $tv_usec);
+		
+		if($changedSockets === 0) {
 			return false;
 		} else {
-			if(in_array($this->master_socket, $sockets)) {
-				$client_socket = $this->accept();
-				$this->handleAccept($client_socket);
+			if(in_array($this->masterSocket, $sockets)) {
+				$clientSocket = $this->accept();
+				$this->handleAccept($clientSocket);
 				unset($sockets[0]);
 			}
 			
 			foreach($sockets as $socket) {
-				$mixed_status = socket_recv($socket, $buffer, 8192, 0);
-				if($mixed_status == null) {
+				$mixedStatus = socket_recv($socket, $buffer, 8192, 0);
+				if($mixedStatus == null) {
 					$this->handleDisconnect($socket);
 					$this->removeClient($socket);
 					continue;
