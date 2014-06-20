@@ -23,12 +23,21 @@ final class Login extends ClubPenguin {
 			return $this->removePenguin($penguin);
 		}
 		
-		$penguinData = $penguin->database->getColumnsByName($username, array("ID", "Username", "Password", "SWID", "Email"));
+		$penguinData = $penguin->database->getColumnsByName($username, array("ID", "Username", "Password", "SWID", "Email", "Banned"));
 		$encryptedPassword = Hashing::getLoginHash($penguinData["Password"], $penguin->randomKey);
 		
 		if($encryptedPassword != $password) {
 			$penguin->send("%xt%e%-1%101%");
 			return $this->removePenguin($penguin);
+		} elseif($penguinData["Banned"] > strtotime("now") || $penguinData["Banned"] == "perm") {
+			if(is_numeric($penguinData["Banned"])) {
+				$hours = round(($penguinData["Banned"] - strtotime("now")) / ( 60 * 60 ));
+				$penguin->send("%xt%e%-1%601%$hours%");
+				$this->removePenguin($penguin);
+			} else {
+				$penguin->send("%xt%e%-1%603%");
+				$this->removePenguin($penguin);
+			}
 		} else {
 			Logger::Notice("Login is successful!");
 			

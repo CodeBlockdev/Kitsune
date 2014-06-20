@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Photo` smallint(5) unsigned NOT NULL DEFAULT '0',
   `Flag` smallint(5) unsigned NOT NULL DEFAULT '0',
   `Walking` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Puffle ID',
+  `Banned` char(15) unsigned NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=102 ;
