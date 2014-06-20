@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 19, 2014 at 12:00 AM
+-- Generation Time: Jun 20, 2014 at 05:21 PM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Photo` smallint(5) unsigned NOT NULL DEFAULT '0',
   `Flag` smallint(5) unsigned NOT NULL DEFAULT '0',
   `Walking` int(10) unsigned NOT NULL DEFAULT '0' COMMENT 'Puffle ID',
-  `Banned` char(15) unsigned NOT NULL DEFAULT '0',
+  `Banned` varchar(20) NOT NULL DEFAULT '0' COMMENT 'Timestamp of ban',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=102 ;
@@ -90,8 +90,8 @@ CREATE TABLE IF NOT EXISTS `penguins` (
 -- Dumping data for table `penguins`
 --
 
-INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Moderator`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`, `Walking`) VALUES
-(101, 'Steffaloo', 'Steffaloo', 'DC647EB65E6711E155375218212B3964', '', '', '{045d200e-a48d-3a28-456e-6fc4e42a5afb}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.me', 1402955932, 1, '4%24059%24060%5374%2109%6036%1840%1841%501%9259', 190320, 1, '|,30|1403128079', '|,21|1403128083', '|,6|1403128029', '||,2226|1403128043|1,2227|1403128051|1,2230|1403128039|1,2231|1403128041|1,2229|1403128049|1,2228|1403128047|1,2235|1403128056|1,919|1403128058|1,908|1403128066|1,574|1403128074|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9259, 501, 0);
+INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Moderator`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`, `Walking`, `Banned`) VALUES
+(101, 'Steffaloo', 'Steffaloo', 'DC647EB65E6711E155375218212B3964', '', '', '{045d200e-a48d-3a28-456e-6fc4e42a5afb}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.me', 1402955932, 1, '4%24059%24060%5374%2109%6036%1840%1841%501%9259', 190320, 1, '|,30|1403128079', '|,21|1403128083', '|,6|1403128029', '||,2226|1403128043|1,2227|1403128051|1,2230|1403128039|1,2231|1403128041|1,2229|1403128049|1,2228|1403128047|1,2235|1403128056|1,919|1403128058|1,908|1403128066|1,574|1403128074|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9259, 501, 0, '0');
 
 -- --------------------------------------------------------
 
