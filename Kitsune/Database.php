@@ -2,18 +2,145 @@
 
 namespace Kitsune;
 
+use Kitsune\Logging\Logger;
+
 class Database extends \PDO {
 
 	private $configFile = "Database.xml";
 	
 	public function __construct() {
 		$dbConfig = simplexml_load_file($this->configFile);
+		
 		$connectionString = sprintf("mysql:dbname=%s;host=%s", $dbConfig->name, $dbConfig->address);
 
 		try {
 			parent::__construct($connectionString, $dbConfig->username, $dbConfig->password);
+			parent::setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function deleteMailFromUser($recipientId, $senderId) {
+		try {	
+			$deleteMail = $this->prepare("DELETE FROM `postcards` WHERE `Recipient` = :Recipient AND `SenderID` = :Sender");
+			$deleteMail->bindValue(":Recipient", $recipientId);
+			$deleteMail->bindValue(":Sender", $senderId);
+			$deleteMail->execute();
+			$deleteMail->closeCursor();
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function ownsPostcard($postcardId, $penguinId) {
+		try {
+			$ownsPostcard = $this->prepare("SELECT Recipient FROM `postcards` WHERE ID = :Postcard");
+			$ownsPostcard->bindValue(":Postcard", $postcardId);
+			$ownsPostcard->execute();
+			
+			list($recipientId) = $ownsPostcard->fetch(\PDO::FETCH_NUM);
+			
+			$ownsPostcard->closeCursor();
+			
+			return $penguinId == $recipientId;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+			
+	
+	public function deleteMail($postcardId) {
+		try {
+			$deleteMail = $this->prepare("DELETE FROM `postcards` WHERE `ID` = :Postcard");
+			$deleteMail->bindValue(":Postcard", $postcardId);
+			$deleteMail->execute();
+			$deleteMail->closeCursor();
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function mailChecked($penguinId) {
+		try {
+			$mailChecked = $this->prepare("UPDATE `postcards` SET HasRead = '1' WHERE Recipient = :Penguin");
+			$mailChecked->bindValue(":Penguin", $penguinId);
+			$mailChecked->execute();
+			$mailChecked->closeCursor();
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function sendMail($recipientId, $senderName, $senderId, $postcardDetails, $sentDate, $postcardType) {
+		try {
+			$sendMail = $this->prepare("INSERT INTO `postcards` (`ID`, `Recipient`, `SenderName`, `SenderID`, `Details`, `Date`, `Type`) VALUES (NULL, :Recipient, :SenderName, :SenderID, :Details, :Date, :Type)");
+			$sendMail->bindValue(":Recipient", $recipientId);
+			$sendMail->bindValue(":SenderName", $senderName);
+			$sendMail->bindValue(":SenderID", $senderId);
+			$sendMail->bindValue(":Details", $postcardDetails);
+			$sendMail->bindValue(":Date", $sentDate);
+			$sendMail->bindValue(":Type", $postcardType);
+			$sendMail->execute();
+			$sendMail->closeCursor();
+			
+			$postcardId = $this->lastInsertId();
+			
+			return $postcardId;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function getUnreadPostcardCount($penguinId) {
+		try {
+			$getPostcards = $this->prepare("SELECT HasRead FROM `postcards` WHERE Recipient = :Penguin");
+			$getPostcards->bindValue(":Penguin", $penguinId);
+			$getPostcards->execute();
+			
+			$penguinPostcards = $getPostcards->fetchAll(\PDO::FETCH_NUM);
+			$getPostcards->closeCursor();
+			
+			$unreadCount = 0;
+			foreach($penguinPostcards as $hasRead) {
+				list($hasRead) = $hasRead;
+				
+				$unreadCount = $hasRead == 0 ? ++$unreadCount : $unreadCount;
+			}
+			
+			return $unreadCount;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function getPostcardCount($penguinId) {
+		try {
+			$getPostcards = $this->prepare("SELECT Recipient FROM `postcards` WHERE Recipient = :Penguin");
+			$getPostcards->bindValue(":Penguin", $penguinId);
+			$getPostcards->execute();
+			
+			$postcardCount = $getPostcards->rowCount();
+			$getPostcards->closeCursor();
+			
+			return $postcardCount;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function getPostcardsById($penguinId) {
+		try {
+			$getPostcards = $this->prepare("SELECT SenderName, SenderID, Type, Details, Date, ID FROM `postcards` WHERE Recipient = :Penguin");
+			$getPostcards->bindValue(":Penguin", $penguinId);
+			$getPostcards->execute();
+			
+			$receivedPostcards = $getPostcards->fetchAll(\PDO::FETCH_NUM);
+			$getPostcards->closeCursor();
+			
+			return $receivedPostcards;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -25,7 +152,7 @@ class Database extends \PDO {
 			$changePuffleRoom->execute();
 			$changePuffleRoom->closeCursor();
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -45,13 +172,9 @@ class Database extends \PDO {
 			list($iglooOwner) = $ownsIgloo->fetch(\PDO::FETCH_NUM);
 			$ownsIgloo->closeCursor();
 			
-			if($iglooOwner == $ownerId) {
-				return true;
-			}
-			
-			return false;
+			return $iglooOwner == $ownerId;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -71,13 +194,9 @@ class Database extends \PDO {
 			list($puffleOwner) = $ownsPuffle->fetch(\PDO::FETCH_NUM);
 			$ownsPuffle->closeCursor();
 			
-			if($puffleOwner == $ownerId) {
-				return true;
-			}
-			
-			return false;
+			return $puffleOwner == $ownerId;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -89,7 +208,7 @@ class Database extends \PDO {
 			$updatePuffleColumn->execute();
 			$updatePuffleColumn->closeCursor();
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -104,7 +223,7 @@ class Database extends \PDO {
 			
 			return $rowCount > 0;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -136,7 +255,7 @@ class Database extends \PDO {
 			
 			return $puffles;			
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 
@@ -157,7 +276,7 @@ class Database extends \PDO {
 			
 			return $playerPuffles;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -172,7 +291,7 @@ class Database extends \PDO {
 			
 			return $columns;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 		
@@ -187,7 +306,7 @@ class Database extends \PDO {
 			
 			return $value;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -204,7 +323,7 @@ class Database extends \PDO {
 			$puffleId = $this->lastInsertId();
 			return $puffleId;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -234,7 +353,7 @@ class Database extends \PDO {
 			return $totalLikes;
 			
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 			
@@ -262,7 +381,7 @@ class Database extends \PDO {
 			
 			return implode(',', $usernames);
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}				
 	
@@ -279,7 +398,7 @@ class Database extends \PDO {
 			
 			return $likes;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -293,7 +412,7 @@ class Database extends \PDO {
 			
 			return $rowCount > 0;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -310,7 +429,7 @@ class Database extends \PDO {
 			
 			return $iglooId;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -325,7 +444,7 @@ class Database extends \PDO {
 			
 			return $layoutCount;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -337,7 +456,7 @@ class Database extends \PDO {
 			$updateIglooStatement->execute();
 			$updateIglooStatement->closeCursor();
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -352,7 +471,7 @@ class Database extends \PDO {
 			
 			return $value;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 			
@@ -381,7 +500,7 @@ class Database extends \PDO {
 			
 			return $iglooLayouts;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -413,7 +532,7 @@ class Database extends \PDO {
 			
 			return $iglooDetails;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -427,7 +546,7 @@ class Database extends \PDO {
 			
 			return $rowCount > 0;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -441,7 +560,7 @@ class Database extends \PDO {
 			
 			return $rowCount > 0;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -456,7 +575,7 @@ class Database extends \PDO {
 			
 			return $penguinColumns;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -471,7 +590,7 @@ class Database extends \PDO {
 			
 			return $penguinColumns;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -483,7 +602,7 @@ class Database extends \PDO {
 			$updateStatement->execute();
 			$updateStatement->closeCursor();
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
@@ -498,7 +617,7 @@ class Database extends \PDO {
 			
 			return $value;
 		} catch(\PDOException $pdoException) {
-			Logger::Warn("{$pdoException->getMessage()}");
+			Logger::Warn($pdoException->getMessage());
 		}
 	}
 	
