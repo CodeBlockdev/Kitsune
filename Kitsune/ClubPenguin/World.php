@@ -78,7 +78,11 @@ final class World extends ClubPenguin {
 			"p#pw" => "handleSendPuffleWalk",
 			"p#pufflewalkswap" => "handlePuffleSwap",
 			"p#puffletrick" => "handlePuffleTrick",
-			"p#puffleswap" => "handleSendChangePuffleRoom"
+			"p#puffleswap" => "handleSendChangePuffleRoom",
+			"p#papi" => "handleSendBuyPuffleCareItem",
+			
+			"t#at" => "handleOpenPlayerBook",
+			"t#rt" => "handleClosePlayerBook"
 		)
 	);
 
@@ -119,8 +123,8 @@ final class World extends ClubPenguin {
 			unset($rooms[$room]);
 		}
 		
-		$agentRooms = array(212, 323, 803);
-		$rockhoppersShip = array(422); // Captain's quarters
+		$agentRooms = array(210, 212, 323, 803);
+		$rockhoppersShip = array(422, 423);
 		$ninjaRooms = array(320, 321, 324, 326);
 		$hotelRooms = range(430, 434);
 		
@@ -169,6 +173,26 @@ final class World extends ClubPenguin {
 		}
 		
 		Logger::Fine("World server is online");
+	}
+	
+	// Maybe add spam-filter-thing for this?
+	protected function handleClosePlayerBook($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguin->room->send("%xt%rt%{$penguin->room->internalId}%{$penguin->id}%");
+	}
+	
+	protected function handleOpenPlayerBook($socket) {
+		$penguin = $this->penguins[$socket];
+		$toyId = Packet::$Data[2];
+		
+		if(is_numeric($toyId) && is_numeric(Packet::$Data[3])) {
+			$penguin->room->send("%xt%at%{$penguin->room->internalId}%{$penguin->id}%$toyId%1%");
+		}
+	}
+	
+	protected function handleSendBuyPuffleCareItem($socket) {
+		Logger::Warn("Work on handleSendBuyPuffleCareItem");
 	}
 	
 	protected function handleDeleteMailFromUser($socket) {
@@ -418,7 +442,11 @@ final class World extends ClubPenguin {
 	}
 	
 	protected function handleGetMyPuffleStats($socket) {
-		Logger::Warn("TODO: Work on handleGetMyPuffleStats");
+		$penguin = $this->penguins[$socket];
+		
+		$puffleStats = $penguin->database->getPuffleStats($penguin->id);
+		
+		$penguin->send("%xt%pgmps%{$penguin->room->internalId}%$puffleStats%");
 	}
 	
 	// Check if they exceed puffle limit
@@ -430,11 +458,16 @@ final class World extends ClubPenguin {
 		$puffleName = ucfirst(Packet::$Data[3]);
 		$puffleSubtype = Packet::$Data[4];
 		
-		// DB stuff
 		if(is_numeric($puffleType) && is_numeric($puffleSubtype)) {
 			$puffleId = $penguin->database->adoptPuffle($penguin->id, $puffleName, $puffleType, $puffleSubtype);
 			$adoptionDate = time();
+			
+			if($puffleSubtype == 0) {
+				$puffleSubtype = "";
+			}
+			
 			$penguin->send("%xt%pn%{$penguin->room->internalId}%{$penguin->coins}%$puffleId|$puffleType|$puffleSubtype|$puffleName|$adoptionDate|100|100|100|100|0|0|0|1|%");
+			
 			$penguin->database->updateColumnById($penguin->id, "Walking", $puffleId);
 			$penguin->walkingPuffle = $penguin->database->getPuffleColumns($puffleId, array("Type", "Subtype", "Hat") );
 			$penguin->walkingPuffle = array_values($penguin->walkingPuffle);
@@ -457,30 +490,32 @@ final class World extends ClubPenguin {
 			$activeIgloo = $penguin->database->getColumnById($playerId, "Igloo");
 			$likes = $penguin->database->getIglooLikes($activeIgloo);
 			
-			foreach($likes as $like) {
-				if($like["id"] == $penguin->swid) {
-					$likeTime = $like["time"];
-					
-					if($likeTime < strtotime("-1 day")) {
-						$canLike = array(
-							"canLike" => true,
-							"periodicity" => "ScheduleDaily",
-							"nextLike_msecs" => 0
-						);
-					} else {
-						$timeRemaining = (time() - $likeTime) * 1000;
+			if(!empty($likes)) {
+				foreach($likes as $like) {
+					if($like["id"] == $penguin->swid) {
+						$likeTime = $like["time"];
 						
-						$canLike = array(
-							"canLike" => false,
-							"periodicity" => "ScheduleDaily",
-							"nextLike_msecs" => $timeRemaining
-						);
+						if($likeTime < strtotime("-1 day")) {
+							$canLike = array(
+								"canLike" => true,
+								"periodicity" => "ScheduleDaily",
+								"nextLike_msecs" => 0
+							);
+						} else {
+							$timeRemaining = (time() - $likeTime) * 1000;
+							
+							$canLike = array(
+								"canLike" => false,
+								"periodicity" => "ScheduleDaily",
+								"nextLike_msecs" => $timeRemaining
+							);
+						}
+						
+						$canLike = json_encode($canLike);
+						$penguin->send("%xt%cli%{$penguin->room->internalId}%$activeIgloo%200%$canLike%");
+						
+						break;
 					}
-					
-					$canLike = json_encode($canLike);
-					$penguin->send("%xt%cli%{$penguin->room->internalId}%$activeIgloo%200%$canLike%");
-					
-					break;
 				}
 			}
 		}
@@ -579,12 +614,11 @@ final class World extends ClubPenguin {
 		$penguin->send("%xt%gbffl%{$penguin->room->internalId}%");
 	}
 	
-	// People can steal other people's igloos this way.. need to add checks to make sure they are the owners!
 	protected function handleUpdateIglooSlotSummary($socket) {
 		$penguin = $this->penguins[$socket];
 		$activeIgloo = Packet::$Data[2];
 		
-		if(is_numeric($activeIgloo) && $penguin->database->iglooExists($activeIgloo)) {
+		if(is_numeric($activeIgloo) && $penguin->database->ownsIgloo($activeIgloo, $penguin->id)) {
 			$penguin->activeIgloo = $activeIgloo;
 			$penguin->database->updateColumnById($penguin->id, "Igloo", $activeIgloo);
 			
@@ -658,7 +692,7 @@ final class World extends ClubPenguin {
 		if(!isset($this->igloos[$iglooId])) {
 			return $penguin->send("%xt%e%-1%402%");
 		} elseif(isset($penguin->igloos[$iglooId])) { // May not be right lol?
-			return $penguin->send("%xt%e%-1%400%");
+			return $penguin->send("%xt%e%-1%500%");
 		}
 		
 		$cost = $this->igloos[$iglooId];
@@ -704,11 +738,11 @@ final class World extends ClubPenguin {
 		}
 	}
 	
-	// Need to add checks to make sure they are the owner!
 	protected function handleUpdateIglooConfiguration($socket) {
 		$penguin = $this->penguins[$socket];
 		
 		$activeIgloo = Packet::$Data[2];
+		
 		if(is_numeric($activeIgloo) && $penguin->database->ownsIgloo($activeIgloo, $penguin->id)) {
 			$iglooType = Packet::$Data[3];
 			$floor = Packet::$Data[4];
@@ -716,7 +750,7 @@ final class World extends ClubPenguin {
 			$music = Packet::$Data[6];
 			$furniture = Packet::$Data[7];
 			
-			if(is_numeric($iglooType) && is_numeric($floor) && is_numeric($location) && is_numeric($music) && (strstr($furniture, ',') !== false)) {
+			if(is_numeric($iglooType) && is_numeric($floor) && is_numeric($location) && is_numeric($music)) {
 				$penguin->activeIgloo = $activeIgloo;
 				$penguin->database->updateColumnById($penguin->id, "Igloo", $penguin->activeIgloo);
 				$penguin->database->updateIglooColumn($penguin->activeIgloo, "Type", $iglooType);
@@ -784,16 +818,45 @@ final class World extends ClubPenguin {
 		}
 	}
 	
+	private function joinPuffleData(array $puffleData, $walkingPuffleId = null, $iglooAppend = false) {
+		$puffles = implode('%', array_map(
+			function($puffle) use($walkingPuffleId, $iglooAppend) {
+				if($puffle["ID"] != $walkingPuffleId) {
+					if($puffle["Subtype"] == 0) {
+						$puffle["Subtype"] = "";
+					}
+					
+					$playerPuffle = implode('|', $puffle);
+					
+					if($iglooAppend !== false) {
+						$playerPuffle .= "|0|0|0|0";
+					}
+					
+					return $playerPuffle;
+				}
+			}, $puffleData
+		));	
+		
+		return $puffles;
+	}
+	
 	protected function handleGetPufflesByPlayerId($socket) {
 		$penguin = $this->penguins[$socket];
 		$playerId = Packet::$Data[2];
 		$roomType = Packet::$Data[3];
 		
 		if($penguin->database->playerIdExists($playerId)) {
-			$puffles = $penguin->database->getPuffles($playerId, $roomType);
+			$puffleData = $penguin->database->getPuffles($playerId, $roomType);
+			$ownedPuffles = sizeof($puffleData);
 			
-			// Doesn't necessarily have to be $playerId, I think?
-			$penguin->send("%xt%pg%{$penguin->room->internalId}%$playerId%$puffles%$roomType%");
+			$walkingPuffle = null;
+			if(!empty($penguin->walkingPuffle)) {
+				list($walkingPuffle) = $penguin->walkingPuffle;
+			}
+			
+			$playerPuffles = $this->joinPuffleData($puffleData, $walkingPuffle, true);
+			
+			$penguin->send("%xt%pg%{$penguin->room->internalId}%$ownedPuffles%$playerPuffles%");
 		}
 	}
 	
@@ -821,38 +884,33 @@ final class World extends ClubPenguin {
 	protected function handleGetFurnitureInventory($socket) {
 		$penguin = $this->penguins[$socket];
 		
-		$furnitureList = $penguin->database->getColumnsById($penguin->id, array("Furniture", "Floors", "Igloos", "Locations"));
+		$furnitureInventory = implode(',', array_map(
+			function($furnitureId, $furnitureDetails) {
+				list($purchaseDate, $furnitureQuantity) = $furnitureDetails;
+				
+				return sprintf("%d|%d%|d", $furnitureId, $purchaseDate, $furnitureQuantity);
+			}, array_keys($penguin->furniture), $penguin->furniture
+		));
 		
-		$furnitureArray = explode(',', $furnitureList["Furniture"]);
-		foreach($furnitureArray as $furniture) {
-			$furnitureDetails = explode('|', $furniture);
-			list($furnitureId, $purchaseDate, $quantity) = $furnitureDetails;
-			$penguin->furniture[$furnitureId] = $quantity;
-		}
+		$floorInventory = implode(',', array_map(
+			function($floorId, $purchaseDate) {
+				return sprintf("%d|%d", $floorId, $purchaseDate);
+			}, array_keys($penguin->floors), $penguin->floors
+		));
 		
-		$flooringArray = explode(',', $furnitureList["Floors"]);
-		foreach($flooringArray as $flooring) {
-			$flooringDetails = explode('|', $flooring);
-			list($flooringId, $purchaseDate) = $flooringDetails;
-			$penguin->floors[$flooringId] = $purchaseDate;
-		}
+		$iglooInventory = implode(',', array_map(
+			function($iglooType, $purchaseDate) {
+				return sprintf("%d|%d", $iglooType, $purchaseDate);
+			}, array_keys($penguin->igloos), $penguin->igloos
+		));
 		
-		$igloosArray = explode(',', $furnitureList["Igloos"]);
-		foreach($igloosArray as $igloo) {
-			$iglooDetails = explode('|', $igloo);
-			list($iglooType, $purchaseDate) = $iglooDetails;
-			$penguin->igloos[$iglooType] = $purchaseDate;
-		}
+		$locationInventory = implode(',', array_map(
+			function($locationId, $purchaseDate) {
+				return sprintf("%d|%d", $locationId, $purchaseDate);
+			}, array_keys($penguin->locations), $penguin->locations
+		));
 		
-		$locationArray = explode(',', $furnitureList["Locations"]);
-		foreach($locationArray as $location) {
-			$locationDetails = explode('|', $location);
-			list($locationId, $purchaseDate) = $locationDetails;
-			$penguin->locations[$locationId] = $purchaseDate;
-		}
-		
-		$furnitureList = implode('%', $furnitureList);
-		$penguin->send("%xt%gii%{$penguin->room->internalId}%$furnitureList%");
+		$penguin->send("%xt%gii%{$penguin->room->internalId}%$furnitureInventory%$floorInventory%$iglooInventory%$locationInventory%");
 	}
 	
 	// Because I'm super lazy
@@ -1034,7 +1092,9 @@ final class World extends ClubPenguin {
 		$penguin->send("%xt%js%-1%1%0%$isModerator%1%");
 		$penguin->send("%xt%gps%-1%{$penguin->id}%");
 		
-		$puffles = $penguin->database->getPlayerPuffles($penguin->id);
+		$puffleData = $penguin->database->getPlayerPuffles($penguin->id);
+		$puffles = $this->joinPuffleData($puffleData);
+		
 		$penguin->send("%xt%pgu%-1%$puffles%");
 		
 		$playerString = $penguin->getPlayerString();
