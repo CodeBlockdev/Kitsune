@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 21, 2014 at 02:29 AM
+-- Generation Time: Jun 21, 2014 at 10:31 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -37,15 +37,7 @@ CREATE TABLE IF NOT EXISTS `igloos` (
   `Likes` text NOT NULL,
   `Locked` tinyint(1) NOT NULL DEFAULT '1',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
-
---
--- Dumping data for table `igloos`
---
-
-INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES
-(1, 101, 30, 21, 645, '574|308|207|1|1,919|512|429|1|1,2235|117|265|1|1,2235|113|359|1|1,2226|155|203|1|1,2227|381|401|1|1,2229|312|398|3|1,2231|553|185|1|3', 6, '[{"id":"{045d200e-a48d-3a28-456e-6fc4e42a5afb}","time":1403128004,"count":1,"isFriend":false}]', 0),
-(2, 102, 1, 0, 0, '', 1, '[]', 1);
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
@@ -85,15 +77,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Banned` varchar(20) NOT NULL DEFAULT '0' COMMENT 'Timestamp of ban',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=103 ;
-
---
--- Dumping data for table `penguins`
---
-
-INSERT INTO `penguins` (`ID`, `Username`, `Nickname`, `Password`, `LoginKey`, `ConfirmationHash`, `SWID`, `Avatar`, `Email`, `RegistrationDate`, `Moderator`, `Inventory`, `Coins`, `Igloo`, `Igloos`, `Floors`, `Locations`, `Furniture`, `Color`, `Head`, `Face`, `Neck`, `Body`, `Hand`, `Feet`, `Photo`, `Flag`, `Walking`, `Banned`) VALUES
-(101, 'Steffaloo', 'Steffaloo', 'DC647EB65E6711E155375218212B3964', '', '', '{045d200e-a48d-3a28-456e-6fc4e42a5afb}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'lucy@kitsune.me', 1402955932, 1, '4%24059%24060%5374%2109%6036%1840%1841%501%9259', 190140, 1, '|,30|1403128079', '|,21|1403128083', '|,6|1403128029', '||,2226|1403128043|1,2227|1403128051|1,2230|1403128039|1,2231|1403128041|1,2229|1403128049|1,2228|1403128047|1,2235|1403128056|1,919|1403128058|1,908|1403128066|1,574|1403128074|1', 4, 1840, 2109, 0, 24059, 5374, 6036, 9259, 501, 0, '0'),
-(102, 'Alice', 'Alice', 'DC647EB65E6711E155375218212B3964', '', '', '{7d492acf-4aa1-3644-d0ca-635740dd1ec8}', '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}', 'alice@wonderla.nd', 0, 0, '4', 199950, 2, '', '', '', '', 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, '0');
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=101 ;
 
 -- --------------------------------------------------------
 
@@ -111,7 +95,7 @@ CREATE TABLE IF NOT EXISTS `postcards` (
   `Type` smallint(5) unsigned NOT NULL,
   `HasRead` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=25 ;
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
@@ -133,15 +117,7 @@ CREATE TABLE IF NOT EXISTS `puffles` (
   `Clean` tinyint(3) unsigned NOT NULL DEFAULT '100',
   `Backyard` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`ID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=3 ;
-
---
--- Dumping data for table `puffles`
---
-
-INSERT INTO `puffles` (`ID`, `Owner`, `Name`, `AdoptionDate`, `Type`, `Subtype`, `Hat`, `Food`, `Play`, `Rest`, `Clean`, `Backyard`) VALUES
-(1, 101, 'Howdy', 1403127843, 8, 1007, 0, 100, 100, 100, 100, 0),
-(2, 101, 'Doge', 1403127876, 0, 1006, 0, 100, 100, 100, 100, 1);
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
