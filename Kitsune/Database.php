@@ -21,6 +21,28 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function getPuffleStats($penguinId) {
+		try {
+			$getPuffleStats = $this->prepare("SELECT ID, Food, Play, Rest, Clean FROM `puffles` WHERE Owner = :Penguin");
+			$getPuffleStats->bindValue(":Penguin", $penguinId);
+			$getPuffleStats->execute();
+			
+			$puffleStats = $getPuffleStats->fetchAll(\PDO::FETCH_NUM);
+			
+			$puffleStats = implode(',', array_map(
+				function($puffleStatistics) {
+					var_dump($puffleStatistics);
+					
+					return implode('|', $puffleStatistics);
+				}, $puffleStats
+			));
+			
+			return $puffleStats;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
 	public function deleteMailFromUser($recipientId, $senderId) {
 		try {	
 			$deleteMail = $this->prepare("DELETE FROM `postcards` WHERE `Recipient` = :Recipient AND `SenderID` = :Sender");
@@ -236,24 +258,10 @@ class Database extends \PDO {
 			$getPuffles->bindValue(":Backyard", $isBackyard);
 			$getPuffles->execute();
 			
-			$playerPuffles = $getPuffles->fetchAll(\PDO::FETCH_NUM);
+			$playerPuffles = $getPuffles->fetchAll(\PDO::FETCH_ASSOC);
 			$getPuffles->closeCursor();
 			
-			$walkingPuffle = $this->getColumnById($playerId, "Walking");
-			
-			$puffles = implode('%', array_map(
-				function($puffle) use ($playerId, $walkingPuffle) {
-					list($puffleId) = $puffle;
-					
-					if($puffleId !== $walkingPuffle) {					
-						$puffle = implode('|', $puffle) . "|0|0|0|0";
-						
-						return $puffle;
-					}
-				},
-				$playerPuffles));
-			
-			return $puffles;			
+			return $playerPuffles;			
 		} catch(\PDOException $pdoException) {
 			Logger::Warn($pdoException->getMessage());
 		}
@@ -265,14 +273,8 @@ class Database extends \PDO {
 			$getPlayerPuffles->bindValue(":Player", $playerId);
 			$getPlayerPuffles->execute();
 			
-			$playerPufflesArray = $getPlayerPuffles->fetchAll(\PDO::FETCH_NUM);
+			$playerPuffles = $getPlayerPuffles->fetchAll(\PDO::FETCH_ASSOC);
 			$getPlayerPuffles->closeCursor();
-			
-			$playerPuffles = implode('%', array_map(
-				function($puffle) {
-					return implode('|', $puffle);
-				},
-				$playerPufflesArray));
 			
 			return $playerPuffles;
 		} catch(\PDOException $pdoException) {
@@ -345,8 +347,10 @@ class Database extends \PDO {
 			foreach($likes as $likesJson) {
 				$iglooLikes = json_decode($likesJson, true);
 				
-				foreach($iglooLikes as $like) {
-					$totalLikes += $like["count"];
+				if(!empty($iglooLikes)) {
+					foreach($iglooLikes as $like) {
+						$totalLikes += $like["count"];
+					}
 				}
 			}
 			
@@ -418,7 +422,7 @@ class Database extends \PDO {
 	
 	public function addIglooLayout($playerId) {
 		try {
-			$addIglooStatement = $this->prepare("INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES (NULL, :Owner, '1', '0', '0', '', '1', '', '1');");
+			$addIglooStatement = $this->prepare("INSERT INTO `igloos` (`ID`, `Owner`, `Type`, `Floor`, `Music`, `Furniture`, `Location`, `Likes`, `Locked`) VALUES (NULL, :Owner, '1', '0', '0', '', '1', '[]', '1');");
 			$addIglooStatement->bindValue(":Owner", $playerId);
 			$addIglooStatement->execute();
 			$addIglooStatement->closeCursor();
@@ -512,11 +516,13 @@ class Database extends \PDO {
 			$iglooArray = $iglooStatement->fetch(\PDO::FETCH_ASSOC);
 			$iglooStatement->closeCursor();
 			
+			$likeCount = 0;
 			$likes = json_decode($iglooArray["Likes"], true);
 			
-			$likeCount = 0;
-			foreach($likes as $like) {
-				$likeCount += $like["count"];
+			if(!empty($likes)) {
+				foreach($likes as $like) {
+					$likeCount += $like["count"];
+				}
 			}
 			
 			$iglooDetails = $iglooId;
@@ -527,7 +533,7 @@ class Database extends \PDO {
 			$iglooDetails .= ':' . $iglooArray["Floor"];
 			$iglooDetails .= ':' . $iglooArray["Location"];
 			$iglooDetails .= ':' . $iglooArray["Type"];
-			$iglooDetails .= ':' . $likeCount; // Igloo likes!
+			$iglooDetails .= ':' . $likeCount;
 			$iglooDetails .= ':' . $iglooArray["Furniture"];
 			
 			return $iglooDetails;
