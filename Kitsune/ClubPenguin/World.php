@@ -15,6 +15,8 @@ final class World extends ClubPenguin {
 			
 			"i#gi" => "handleGetInventoryList",
 			"i#ai" => "handleBuyInventory",
+			"i#qpp" => "handleGetPlayerPins",
+			"i#qpa" => "handleGetPlayerAwards",
 			
 			"u#glr" => "handleGetLastRevision",
 			"u#pbi" => "handleGetPlayerInfoById",
@@ -71,6 +73,12 @@ final class World extends ClubPenguin {
 			"o#ban" => "handleModeratorBan",
 			"o#moderatormessage" => "handleModeratorMessage",
 			
+			"st#sse" => "handleStampAdd",
+			"st#gps" => "handleGetStamps",
+			"st#gmres" => "handleGetRecentStamps",
+			"st#gsbcd" => "handleGetBookCover",
+			"st#ssbcd" => "handleUpdateBookCover",
+			
 			"p#pg" => "handleGetPufflesByPlayerId",
 			"p#checkpufflename" => "handleCheckPuffleNameWithResponse",
 			"p#pn" => "handleAdoptPuffle",
@@ -88,6 +96,7 @@ final class World extends ClubPenguin {
 
 	public $rooms = array();
 	public $items = array();
+	public $pins = array();
 	public $locations = array();
 	public $furniture = array();
 	public $floors = array();
@@ -127,6 +136,7 @@ final class World extends ClubPenguin {
 		$rockhoppersShip = array(422, 423);
 		$ninjaRooms = array(320, 321, 324, 326);
 		$hotelRooms = range(430, 434);
+		$this->pins = array_merge(range(500, 650), range(7000, 7100));
 		
 		$noSpawn = array_merge($agentRooms, $rockhoppersShip, $ninjaRooms, $hotelRooms);
 		$this->spawnRooms = array_keys(
@@ -261,6 +271,79 @@ final class World extends ClubPenguin {
 		}
 	}
 	
+	protected function handleGetPlayerPins($socket) {
+		$penguin = $this->penguins[$socket];
+		$playerId = Packet::$Data[2];
+		$pins = "";
+		if(is_numeric($playerId)){
+			$inventory = explode('%', $penguin->database->getColumnById($playerId, "Inventory"));
+			foreach($this->pins as $pin){
+				if(in_array($pin, $inventory)){
+					$pins .= "$pin|".time()."|0%";
+				}
+			}
+			$pins = rtrim($pins, "%");
+			$penguin->send("%xt%qpp%-1%$pins%");
+		}
+	}
+	
+	protected function handleGetPlayerAwards($socket) {
+		$penguin = $this->penguins[$socket];
+		$playerId = Packet::$Data[2];
+		$penguin->send("%xt%qpa%-1%$playerId%%");
+	}
+	
+	protected function handleStampAdd($socket) {
+		$penguin = $this->penguins[$socket];
+		$stampId = Packet::$Data[2];
+		if(is_numeric($stampId)){
+			$stamps = $penguin->database->getColumnById($penguin->id, "Stamps");
+			if(strpos($stamps, $stampId.",") === false) {
+				$penguin->database->updateColumnById($penguin->id, "Stamps", $stamps . $stampId . ",");
+				$penguin->send("%xt%sse%-1%$stampId%{$penguin->coins}%");
+			}
+		}
+	}
+	
+	protected function handleGetStamps($socket) {
+		$penguin = $this->penguins[$socket];
+		$playerId = Packet::$Data[2];
+		if(is_numeric($playerId)) {
+			$stamps = rtrim(str_replace(",", "|", $penguin->database->getColumnById($playerId, "Stamps")), "|");
+			$penguin->send("%xt%gps%-1%$playerId%$stamps%");
+		}
+	}
+	
+	protected function handleGetRecentStamps($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%gmres%-1%%");
+	}
+	
+	protected function handleGetBookCover($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguinId = Packet::$Data[2];
+		if(is_numeric($penguinId)) {
+			$stampBook = $penguin->database->getColumnById($penguinId, "StampBook");
+			$penguin->send("%xt%gsbcd%-1%$stampBook%");
+		}
+	}
+	
+	protected function handleUpdateBookCover($socket) {
+		$penguin = $this->penguins[$socket];
+		if(is_numeric(Packet::$Data[2].Packet::$Data[3].Packet::$Data[4].Packet::$Data[5])) {
+			$newCover = Packet::$Data[2]."%".Packet::$Data[3]."%".Packet::$Data[4]."%".Packet::$Data[5];
+			if(count(Packet::$Data) > 5){
+				foreach(range(6, 12) as $num){
+					if(isset(Packet::$Data[$num])){
+						$newCover .= "%" . Packet::$Data[$num];
+					}
+				}
+			}
+			$penguin->database->updateColumnById($penguin->id, "StampBook", $newCover);
+		}
+		$penguin->send("%xt%ssbcd%-1%");
+	}
+	
 	public function mutePlayer($targetPlayer, $moderatorUsername) {
 		if(!$targetPlayer->muted) {
 			$targetPlayer->muted = true;
@@ -303,7 +386,7 @@ final class World extends ClubPenguin {
 		}
 	}
 	
-	protected function handleBan($socket) {
+	protected function handleModeratorBan($socket) {
 		$penguin = $this->penguins[$socket];
 		$player = Packet::$Data[2];
 		$banType = Packet::$Data[3];
@@ -1090,7 +1173,8 @@ final class World extends ClubPenguin {
 		
 		$isModerator = intval($penguin->moderator);
 		$penguin->send("%xt%js%-1%1%0%$isModerator%1%");
-		$penguin->send("%xt%gps%-1%{$penguin->id}%");
+		$stamps = rtrim(str_replace(",", "|", $penguin->database->getColumnById($penguin->id, "Stamps")), "|");
+		$penguin->send("%xt%gps%-1%{$penguin->id}%$stamps%");
 		
 		$puffleData = $penguin->database->getPlayerPuffles($penguin->id);
 		$puffles = $this->joinPuffleData($puffleData);
