@@ -80,8 +80,7 @@ class Penguin {
 		$this->database->updateColumnById($this->id, "Igloos", $igloosString);
 		
 		if($cost !== 0) {
-			$this->coins -= $cost;
-			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+			$this->setCoins($this->coins - $cost);
 		}
 		
 		$this->send("%xt%au%{$this->room->internalId}%$iglooId%{$this->coins}%");
@@ -98,33 +97,31 @@ class Penguin {
 		$this->database->updateColumnById($this->id, "Floors", $flooringString);
 		
 		if($cost !== 0) {
-			$this->coins -= $cost;
-			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+			$this->setCoins($this->coins - $cost);
 		}
 		
 		$this->send("%xt%ag%{$this->room->internalId}%$floorId%{$this->coins}%");
 	}
 	
 	public function buyFurniture($furnitureId, $cost = 0) {
-		$furniture_quantity = 1;
+		$furnitureQuantity = 1;
 		
 		if(isset($this->furniture[$furnitureId])) {
-			list($furniture_quantity) = $this->furniture[$furnitureId];
+			list($lastPurchaseDate, $furnitureQuantity) = $this->furniture[$furnitureId];
 		}
 		
-		$this->furniture[$furnitureId] = array($furniture_quantity, time());
+		$this->furniture[$furnitureId] = array(time(), $furnitureQuantity);
 		
 		$furnitureString = implode(',', array_map(
 			function($furnitureId, $furnitureDetails) {
-				list($quantity, $purchaseDate) = $furnitureDetails;
-				return $furnitureId . '|' . $purchaseDate . '|' . $quantity;
+				list($purchaseDate, $furnitureQuantity) = $furnitureDetails;
+				return $furnitureId . '|' . $purchaseDate . '|' . $furnitureQuantity;
 			}, array_keys($this->furniture), $this->furniture));
 		
 		$this->database->updateColumnById($this->id, "Furniture", $furnitureString);
 		
 		if($cost !== 0) {
-			$this->coins -= $cost;
-			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+			$this->setCoins($this->coins - $cost);
 		}
 		
 		$this->send("%xt%af%{$this->room->internalId}%$furnitureId%{$this->coins}%");
@@ -141,8 +138,7 @@ class Penguin {
 		$this->database->updateColumnById($this->id, "Locations", $locationsString);
 		
 		if($cost !== 0) {
-			$this->coins -= $cost;
-			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+			$this->setCoins($this->coins - $cost);
 		}
 		
 		$this->send("%xt%aloc%{$this->room->internalId}%$locationId%{$this->coins}%");
@@ -204,11 +200,11 @@ class Penguin {
 	
 	public function addItem($itemId, $cost) {
 		array_push($this->inventory, $itemId);
+		
 		$this->database->updateColumnById($this->id, "Inventory", implode('%', $this->inventory));
 		
 		if($cost !== 0) {
-			$this->coins -= $cost;
-			$this->database->updateColumnById($this->id, "Coins", $this->coins);
+			$this->setCoins($this->coins - $cost);
 		}
 		
 		$this->send("%xt%ai%{$this->room->internalId}%$itemId%{$this->coins}%");
@@ -219,10 +215,59 @@ class Penguin {
 		
 		$clothing = array("Color", "Head", "Face", "Neck", "Body", "Hand", "Feet", "Photo", "Flag", "Walking");
 		$player = array("Avatar", "RegistrationDate", "Moderator", "Inventory", "Coins");
-		$columns = array_merge($clothing, $player);
-		$playerArray = $this->database->getColumnsByName($this->username, $columns);
+		$igloo = array("Furniture", "Floors", "Igloos", "Locations");
 		
+		$columns = array_merge($clothing, $player, $igloo);
+		$playerArray = $this->database->getColumnsById($this->id, $columns);
+			
+		$furnitureArray = explode(',', $playerArray["Furniture"]);
+		
+		if(!empty($furnitureArray)) {
+			list($firstFurniture) = $furnitureArray;
+			list($furnitureId) = explode("|", $firstFurniture);
+
+			if($furnitureId == "") {
+				array_shift($furnitureArray);
+				
+				$furniture = implode(",", $furnitureArray);
+				
+				$this->database->updateColumnById($this->id, "Furniture", $furniture);
+			}
+			
+			foreach($furnitureArray as $furniture) {
+				$furnitureDetails = explode('|', $furniture);
+				list($furnitureId, $purchaseDate, $quantity) = $furnitureDetails;
+				
+				$this->furniture[$furnitureId] = array($quantity, $purchaseDate);
+			}
+		}
+		
+		$flooringArray = explode(',', $playerArray["Floors"]);
+		foreach($flooringArray as $flooring) {
+			$flooringDetails = explode('|', $flooring);
+			list($flooringId, $purchaseDate) = $flooringDetails;
+			
+			$this->floors[$flooringId] = $purchaseDate;
+		}
+		
+		$igloosArray = explode(',', $playerArray["Igloos"]);
+		foreach($igloosArray as $igloo) {
+			$iglooDetails = explode('|', $igloo);
+			list($iglooType, $purchaseDate) = $iglooDetails;
+			
+			$this->igloos[$iglooType] = $purchaseDate;
+		}
+		
+		$locationArray = explode(',', $playerArray["Locations"]);
+		foreach($locationArray as $location) {
+			$locationDetails = explode('|', $location);
+			list($locationId, $purchaseDate) = $locationDetails;
+			
+			$this->locations[$locationId] = $purchaseDate;
+		}
+				
 		list($this->color, $this->head, $this->face, $this->neck, $this->body, $this->hand, $this->feet, $this->photo, $this->flag) = array_values($playerArray);
+		
 		$this->age = floor((strtotime("NOW") - $playerArray["RegistrationDate"]) / 86400); 
 		$this->avatar = $playerArray["Avatar"];
 		$this->coins = $playerArray["Coins"];
@@ -233,7 +278,7 @@ class Penguin {
 			$puffle = $this->database->getPuffleColumns($playerArray["Walking"], array("Type", "Subtype", "Hat"));
 			$this->walkingPuffle = array_values($puffle);
 			array_unshift($this->walkingPuffle, $playerArray["Walking"]);
-		}
+		}	
 	}
 	
 	public function getPlayerString() {
