@@ -47,6 +47,12 @@ class Penguin {
 		$this->database = new Kitsune\Database();
 	}
 	
+	public function setCoins($coinAmount) {
+		$this->coins = $coinAmount;
+		
+		$this->database->updateColumnById($this->id, "Coins", $this->coins);
+	}
+	
 	public function walkPuffle($puffleId, $walkBoolean) {
 		if($walkBoolean != 0) {
 			$this->walkingPuffle = $this->database->getPuffleColumns($puffleId, array("Type", "Subtype", "Hat"));
