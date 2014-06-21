@@ -27,9 +27,14 @@ final class World extends ClubPenguin {
 			"u#sb" => "handlePlayerThrowBall",
 			"u#gbffl" => "handleGetBestFriendsList",
 			"u#pbsu" => "handlePlayerBySwidUsername",
+			"u#ss" => "handleSafeMessage",
 			
 			"l#mg" => "handleGetMail",
-			"l#mst" => "handleMailStartEngine",
+			"l#mst" => "handleStartMailEngine",
+			"l#ms" => "handleSendMailItem",
+			"l#mc" => "handleMailChecked",
+			"l#md" => "handleDeleteMailItem",
+			"l#mdp" => "handleDeleteMailFromUser",
 			
 			"s#upc" => "handleSendUpdatePlayerClothing",
 			"s#uph" => "handleSendUpdatePlayerClothing",
@@ -85,6 +90,7 @@ final class World extends ClubPenguin {
 	public $igloos = array();
 	
 	public $spawnRooms = array();
+	public $penguinsById = array();
 	
 	private $openIgloos = array();
 	
@@ -165,12 +171,78 @@ final class World extends ClubPenguin {
 		Logger::Fine("World server is online");
 	}
 	
+	protected function handleDeleteMailFromUser($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguinId = Packet::$Data[2];
+		
+		if($penguin->database->playerIdExists($penguinId)) {
+			$penguin->database->deleteMailFromUser($penguin->id, $penguinId);
+			$postcardCount = $penguin->database->getPostcardCount($penguin->id);
+			
+			$penguin->send("%xt%mdp%{$penguin->room->internalId}%$postcardCount%");
+		}
+	}
+	
+	protected function handleDeleteMailItem($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$postcardId = Packet::$Data[2];
+		
+		if(is_numeric($postcardId) && $penguin->database->ownsPostcard($postcardId, $penguin->id)) {
+			$penguin->database->deleteMail($postcardId);
+		}
+	}
+	
+	protected function handleMailChecked($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguin->database->mailChecked($penguin->id);
+	}
+	
+	protected function handleSendMailItem($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$recipientId = Packet::$Data[2];
+		$postcardType = Packet::$Data[3];
+		
+		if($penguin->database->playerIdExists($recipientId) && is_numeric($postcardType)) {
+			if($penguin->coins < 10) {
+				$penguin->send("%xt%ms%{$penguin->room->internalId}%{$penguin->coins}%2%");
+			} else {
+				$postcardCount = $penguin->database->getPostcardCount($recipientId);
+				if($postcardCount == 100) {
+					$penguin->send("%xt%ms%{$penguin->room->internalId}%{$penguin->coins}%0%");
+				} else {
+					$penguin->setCoins($penguin->coins - 10);
+					
+					$sentDate = time();
+					$postcardId = $penguin->database->sendMail($recipientId, $penguin->username, $penguin->id, "", $sentDate, $postcardType);
+					$penguin->send("%xt%ms%{$penguin->room->internalId}%{$penguin->coins}%1%");
+					
+					if(isset($this->penguinsById[$recipientId])) {
+						$this->penguinsById[$recipientId]->send("%xt%mr%-1%{$penguin->username}%{$penguin->id}%$postcardType%%$sentDate%$postcardId%");
+					}
+				}
+			}
+		}
+	}
+	
+	protected function handleSafeMessage($socket) {
+		$penguin = $this->penguins[$socket];
+		$messageId = Packet::$Data[2];
+		
+		if(is_numeric($messageId)) {
+			$penguin->room->send("%xt%ss%{$penguin->room->internalId}%{$penguin->id}%$messageId%");
+		}
+	}
+	
 	public function mutePlayer($targetPlayer, $moderatorUsername) {
-		if(!$targetPlayer->muted){
+		if(!$targetPlayer->muted) {
 			$targetPlayer->muted = true;
 			$targetPlayer->send("%xt%moderatormessage%-1%2%");
 			Logger::Info("$moderatorUsername has muted {$targetPlayer->username}");
-		}else{
+		} else {
 			$targetPlayer->muted = false;
 			Logger::Info("$moderatorUsername has unmuted {$targetPlayer->username}");
 		}
@@ -313,7 +385,6 @@ final class World extends ClubPenguin {
 		$penguin->send("%xt%pio%{$penguin->room->internalId}%$open%");
 	}
 	
-	// Add check to make sure puffle belongs to the player
 	protected function handleSendPuffleWalk($socket) {
 		$penguin = $this->penguins[$socket];
 		$puffleId = Packet::$Data[2];
@@ -875,17 +946,31 @@ final class World extends ClubPenguin {
 	}
 	
 	protected function handleGetMail($socket) {
-		$this->penguins[$socket]->send("%xt%mg%-1%");
+		$penguin = $this->penguins[$socket];
+		
+		$receivedPostcards = $penguin->database->getPostcardsById($penguin->id);
+		$receivedPostcards = array_reverse($receivedPostcards, true);
+		
+		$penguinPostcards = implode('%', array_map(
+			function($postcard) {			
+				return implode('|', $postcard);
+			}, $receivedPostcards
+		));
+		
+		$penguin->send("%xt%mg%-1%$penguinPostcards%");
 	}
 	
 	protected function handleGetLastRevision($socket) {
 		$this->penguins[$socket]->send("%xt%glr%-1%10915%");
 	}
 	
-	protected function handleMailStartEngine($socket) {
+	protected function handleStartMailEngine($socket) {
 		$penguin = $this->penguins[$socket];
 		
-		$penguin->send("%xt%mst%-1%0%0%");
+		$unreadCount = $penguin->database->getUnreadPostcardCount($penguin->id);
+		$postcardCount = $penguin->database->getPostcardCount($penguin->id);
+		
+		$penguin->send("%xt%mst%-1%$unreadCount%$postcardCount%");
 	}
 	
 	protected function handleGetInventoryList($socket) {
@@ -941,6 +1026,8 @@ final class World extends ClubPenguin {
 		
 		$penguin->loadPlayer();
 		
+		$this->penguinsById[$penguin->id] = $penguin;
+		
 		$penguin->send("%xt%activefeatures%-1%");
 		
 		$isModerator = intval($penguin->moderator);
@@ -961,8 +1048,6 @@ final class World extends ClubPenguin {
 				
 		// The 0 after the player id is probably a transformation id, will be looking into a proper implementation
 		$penguin->room->send("%xt%spts%-1%{$penguin->id}%0%{$penguin->avatar}%");
-		
-		$penguin->send("%xt%cberror%-1%Kitsune is a Club Penguin private server program written in PHP by Arthur designed to emulate the AS3 protocol.%Welcome%");
 	}
 
 	protected function handleLogin($socket) {
@@ -1002,23 +1087,23 @@ final class World extends ClubPenguin {
 	
 	protected function removePenguin($penguin) {
 		$this->removeClient($penguin->socket);
-		
+
 		if($penguin->room !== null) {
 			$penguin->room->remove($penguin);
 		}
-		
+
 		unset($this->penguins[$penguin->socket]);
 	}
-	
+
 	protected function handleDisconnect($socket) {
 		$penguin = $this->penguins[$socket];
-		
+
 		if($penguin->room !== null) {
 			$penguin->room->remove($penguin);
 		}
-		
+
 		unset($this->penguins[$socket]);
-		
+
 		Logger::Info("Player disconnected");
 	}
 	
