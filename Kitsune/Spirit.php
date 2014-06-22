@@ -48,8 +48,7 @@ abstract class Spirit {
 
 	public function acceptClients() {
 		$sockets = array_merge(array($this->masterSocket), $this->sockets);
-		$tv_usec = mt_rand(20, 70);
-		$changedSockets = socket_select($sockets, $write, $except, $tv_usec);
+		$changedSockets = socket_select($sockets, $write, $except, 5);
 		
 		if($changedSockets === 0) {
 			return false;
