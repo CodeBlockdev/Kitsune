@@ -194,7 +194,7 @@ final class World extends ClubPenguin {
 			unset($igloos[$iglooId]);
 		}
 		
-		$careItems = $downloadAndDecode("http://media1.localhost/play/en/web_service/game_configs/puffle_items.json");
+		$careItems = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/puffle_items.json");
 		foreach($careItems as $careId => $careItem) {
 			$itemId = $careItem["puffle_item_id"];
 			
