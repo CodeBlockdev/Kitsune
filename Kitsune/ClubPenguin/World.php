@@ -87,7 +87,11 @@ final class World extends ClubPenguin {
 			"p#pufflewalkswap" => "handlePuffleSwap",
 			"p#puffletrick" => "handlePuffleTrick",
 			"p#puffleswap" => "handleSendChangePuffleRoom",
+			"p#pgpi" => "handleGetPuffleCareInventory",
 			"p#papi" => "handleSendBuyPuffleCareItem",
+			"p#phg" => "handleGetPuffleHanderStatus",
+			"p#puphi" => "handleVisitorHatUpdate",
+			"p#pp" => "handleSendPufflePlay",
 			
 			"t#at" => "handleOpenPlayerBook",
 			"t#rt" => "handleClosePlayerBook"
@@ -136,7 +140,6 @@ final class World extends ClubPenguin {
 		$rockhoppersShip = array(422, 423);
 		$ninjaRooms = array(320, 321, 324, 326);
 		$hotelRooms = range(430, 434);
-		$this->pins = array_merge(range(500, 650), range(7000, 7100));
 		
 		$noSpawn = array_merge($agentRooms, $rockhoppersShip, $ninjaRooms, $hotelRooms);
 		$this->spawnRooms = array_keys(
@@ -148,41 +151,116 @@ final class World extends ClubPenguin {
 		);
 		
 		$items = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/paper_items.json");
-		foreach($items as $item) {
+		foreach($items as $itemIndex => $item) {
 			$itemId = $item["paper_item_id"];
+			
 			$this->items[$itemId] = $item["cost"];
-			unset($items[$itemId]);
+			
+			if($item["type"] == 8) {
+				array_push($this->pins, $itemId);
+			}
+			
+			unset($items[$itemIndex]);
 		}
 		
 		$locations = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloo_locations.json");
-		foreach($locations as $location) {
+		foreach($locations as $locationIndex => $location) {
 			$locationId = $location["igloo_location_id"];
 			$this->locations[$locationId] = $location["cost"];
-			unset($locations[$locationId]);
+			
+			unset($locations[$locationIndex]);
 		}
 		
 		$furnitureList = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/furniture_items.json");
-		foreach($furnitureList as $furniture) {
+		foreach($furnitureList as $furnitureIndex => $furniture) {
 			$furnitureId = $furniture["furniture_item_id"];
 			$this->furniture[$furnitureId] = $furniture["cost"];
-			unset($furnitureList[$furnitureId]);
+			
+			unset($furnitureList[$furnitureIndex]);
 		}
 		
 		$floors = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloo_floors.json");
-		foreach($floors as $floor) {
+		foreach($floors as $floorIndex => $floor) {
 			$floorId = $floor["igloo_floor_id"];
 			$this->floors[$floorId] = $floor["cost"];
-			unset($floors[$floorId]);
+			
+			unset($floors[$floorIndex]);
 		}
 		
 		$igloos = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloos.json");
 		foreach($igloos as $iglooId => $igloo) {
-			$cost = $igloo["cost"];
-			$this->igloos[$iglooId] = $cost;
+			$this->igloos[$iglooId] = $igloo["cost"];
+			
 			unset($igloos[$iglooId]);
 		}
 		
+		$careItems = $downloadAndDecode("http://media1.localhost/play/en/web_service/game_configs/puffle_items.json");
+		foreach($careItems as $careId => $careItem) {
+			$itemId = $careItem["puffle_item_id"];
+			
+			$this->careItems[$itemId] = $careItem["cost"];
+			
+			unset($careItems[$careId]);
+		}
+		
 		Logger::Fine("World server is online");
+	}
+	
+	protected function handleSendPufflePlay($socket) {
+		Logger::Warn("Need to log packets");
+	}
+	
+	protected function handleVisitorHatUpdate($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$puffleId = Packet::$Data[2];
+		$hatId = Packet::$Data[3];
+
+		if($penguin->database->ownsPuffle($puffleId, $penguin->id) && isset($this->careItems[$hatId])) {
+			$penguin->database->updatePuffleColumn($puffleId, "Hat", $hatId);
+			
+			$penguin->room->send("%xt%puphi%{$penguin->room->internalId}%$puffleId%$hatId%");
+		}
+	}
+	
+	protected function handleGetPuffleHanderStatus($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguin->send("%xt%phg%{$penguin->room->internalId}%1%");
+	}
+	
+	protected function handleSendBuyPuffleCareItem($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$itemId = Packet::$Data[2];
+		
+		if(!isset($this->careItems[$itemId])) {
+			$penguin->send("%xt%e%-1%402%");
+		} else {
+			$itemCost = $this->careItems[$itemId];
+			
+			if($penguin->coins < $itemCost) {
+				$penguin->send("%xt%e%-1%401%");
+			} else {
+				$penguin->buyPuffleCareItem($itemId, $itemCost);
+			}
+		}
+	}
+	
+	protected function handleGetPuffleCareInventory($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$careInventory = "";
+		
+		if(!empty($penguin->careInventory)) {
+			$careInventory = implode('%', array_map(
+				function($itemId, $quantity) {
+					return sprintf("%d|%d", $itemId, $quantity);
+				}, array_keys($penguin->careInventory), $penguin->careInventory
+			));
+		}
+		
+		$penguin->send("%xt%pgpi%{$penguin->room->internalId}%$careInventory%");
 	}
 	
 	// Maybe add spam-filter-thing for this?
@@ -199,10 +277,6 @@ final class World extends ClubPenguin {
 		if(is_numeric($toyId) && is_numeric(Packet::$Data[3])) {
 			$penguin->room->send("%xt%at%{$penguin->room->internalId}%{$penguin->id}%$toyId%1%");
 		}
-	}
-	
-	protected function handleSendBuyPuffleCareItem($socket) {
-		Logger::Warn("Work on handleSendBuyPuffleCareItem");
 	}
 	
 	protected function handleDeleteMailFromUser($socket) {
@@ -532,14 +606,19 @@ final class World extends ClubPenguin {
 		$penguin->send("%xt%pgmps%{$penguin->room->internalId}%$puffleStats%");
 	}
 	
-	// Check if they exceed puffle limit
+	// Check if they exceed puffle limit (?)
 	// Also check if types are valid!
-	// Implement proper coin deduction
 	protected function handleAdoptPuffle($socket) {
 		$penguin = $this->penguins[$socket];
 		$puffleType = Packet::$Data[2];
 		$puffleName = ucfirst(Packet::$Data[3]);
 		$puffleSubtype = Packet::$Data[4];
+		
+		if($puffleSubtype == 0) {
+			$puffleCost = 400;
+		} else {
+			$puffleCost = 800;
+		}
 		
 		if(is_numeric($puffleType) && is_numeric($puffleSubtype)) {
 			$puffleId = $penguin->database->adoptPuffle($penguin->id, $puffleName, $puffleType, $puffleSubtype);
@@ -549,6 +628,13 @@ final class World extends ClubPenguin {
 				$puffleSubtype = "";
 			}
 			
+			$penguin->buyPuffleCareItem(3, 0, 5, true); // Puffle O's
+			$penguin->buyPuffleCareItem(76, 0, 1, true); // Apple
+			
+			$postcardId = $penguin->database->sendMail($penguin->id, "sys", 0, $puffleName, $adoptionDate, 111);
+			$penguin->send("%xt%mr%-1%sys%0%111%$puffleName%$adoptionDate%$postcardId%"); 
+			
+			$penguin->setCoins($penguin->coins - $puffleCost);
 			$penguin->send("%xt%pn%{$penguin->room->internalId}%{$penguin->coins}%$puffleId|$puffleType|$puffleSubtype|$puffleName|$adoptionDate|100|100|100|100|0|0|0|1|%");
 			
 			$penguin->database->updateColumnById($penguin->id, "Walking", $puffleId);
