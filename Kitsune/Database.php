@@ -23,16 +23,14 @@ class Database extends \PDO {
 	
 	public function getPuffleStats($penguinId) {
 		try {
-			$getPuffleStats = $this->prepare("SELECT ID, Food, Play, Rest, Clean FROM `puffles` WHERE Owner = :Penguin");
+			$getPuffleStats = $this->prepare("SELECT ID, Food, Play, Rest, Clean FROM `puffles` WHERE Owner = :Penguin AND Backyard = '0'");
 			$getPuffleStats->bindValue(":Penguin", $penguinId);
 			$getPuffleStats->execute();
 			
 			$puffleStats = $getPuffleStats->fetchAll(\PDO::FETCH_NUM);
 			
 			$puffleStats = implode(',', array_map(
-				function($puffleStatistics) {
-					var_dump($puffleStatistics);
-					
+				function($puffleStatistics) {					
 					return implode('|', $puffleStatistics);
 				}, $puffleStats
 			));
