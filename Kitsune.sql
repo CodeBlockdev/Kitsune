@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 21, 2014 at 10:57 PM
+-- Generation Time: Jun 22, 2014 at 05:54 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `RegistrationDate` int(8) NOT NULL,
   `Moderator` tinyint(1) NOT NULL DEFAULT '0',
   `Inventory` text NOT NULL,
+  `CareInventory` text NOT NULL,
   `Coins` mediumint(7) unsigned NOT NULL DEFAULT '200000',
   `Igloo` int(10) unsigned NOT NULL COMMENT 'Current active igloo',
   `Igloos` text NOT NULL COMMENT 'Owned igloo types',
