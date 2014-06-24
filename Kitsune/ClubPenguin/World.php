@@ -95,6 +95,11 @@ final class World extends ClubPenguin {
 			
 			"t#at" => "handleOpenPlayerBook",
 			"t#rt" => "handleClosePlayerBook"
+		),
+		
+		"z" => array(
+			"gz" => "handleGetGame",
+			"m" => "handleGameMove"
 		)
 	);
 
@@ -111,7 +116,11 @@ final class World extends ClubPenguin {
 	
 	private $openIgloos = array();
 	
+	public $rinkPuck = array(0, 0, 0, 0);
+	
 	public function __construct() {
+		parent::__construct();
+		
 		if(is_dir("crumbs") === false) {
 			mkdir("crumbs", 0777);
 		}
@@ -204,6 +213,21 @@ final class World extends ClubPenguin {
 		}
 		
 		Logger::Fine("World server is online");
+	}
+	
+	protected function handleGameMove($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$this->rinkPuck = array_splice(Packet::$Data, 3);
+		$puckData = implode('%', $this->rinkPuck);
+		
+		$penguin->send("%xt%zm%{$penguin->room->internalId}%{$penguin->id}%$puckData%");
+	}
+	
+	protected function handleGetGame($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguin->send("%xt%gz%{$penguin->room->internalId}%" . implode('%', $this->rinkPuck) . "%");
 	}
 	
 	protected function handleSendPufflePlay($socket) {
