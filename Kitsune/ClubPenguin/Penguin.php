@@ -50,19 +50,10 @@ class Penguin {
 	}
 	
 	public function buyPuffleCareItem($itemId, $itemCost = 0, $howMany = null, $beSilent = false) {
-		// The following can probably be simplified
-		if($howMany !== null) {
-			if(isset($this->careInventory[$itemId])) {
-				$itemQuantity = $this->careInventory[$itemId] + $howMany;
-			} else {
-				$itemQuantity = $howMany;
-			}
+		if(isset($this->careInventory[$itemId])) {
+			$itemQuantity = $this->careInventory[$itemId] + $howMany;
 		} else {
-			if(isset($this->careInventory[$itemId])) {
-				$itemQuantity = ++$this->careInventory[$itemId];
-			} else {
-				$itemQuantity = 1;
-			}
+			$itemQuantity = $howMany;
 		}
 		
 		if($itemCost !== 0) {
