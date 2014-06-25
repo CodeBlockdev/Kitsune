@@ -7,9 +7,11 @@ use Kitsune\ClubPenguin\Plugins\Base\Plugin;
 
 final class Commands extends Plugin {
 	
+	public $dependencies = array("Ranks");
+	
 	public $worldHandlers = array(
 		"s" => array(
-			"m#sm" => "handlePlayerMessage"
+			"m#sm" => array("handlePlayerMessage", self::Both)
 		)
 	);
 	
@@ -19,6 +21,8 @@ final class Commands extends Plugin {
 		"AI" => "buyItem",
 		"JR" => "joinRoom"
 	);
+	
+	private $mutedPenguins = array();
 	
 	public function __construct($server) {
 		$this->server = $server;
@@ -54,7 +58,13 @@ final class Commands extends Plugin {
 			$arguments = array_splice($messageParts, 1);
 			
 			if(isset($this->commands[$command])) {
-				call_user_func(array($this, $this->commands[$command]), $penguin, $arguments);
+				if(in_array($penguin, $this->mutedPenguins)) {
+					$penguin->muted = false;
+				} else {
+					$penguin->muted = true;
+					array_push($this->mutedPenguins, $penguin);
+					call_user_func(array($this, $this->commands[$command]), $penguin, $arguments);
+				}
 			}
 		}
 	}
