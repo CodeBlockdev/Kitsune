@@ -8,15 +8,17 @@ class Room {
 	
 	public $externalId;
 	public $internalId;
+	public $isGame;
 	
-	public function __construct($externalId, $internalId) {
+	public function __construct($externalId, $internalId, $isGame) {
 		$this->externalId = $externalId;
 		$this->internalId = $internalId;
+		$this->isGame = $isGame;
 	}
 	
 	public function add($penguin) {
 		array_push($this->penguins, $penguin);
-		if($this->externalId > 899) {
+		if($this->isGame) {
 			$nonBlackholeGames = array(900, 909, 956, 950, 963, 121);
 			if(in_array($this->externalId, $nonBlackholeGames)) {
 				$penguin->send("%xt%jnbhg%{$this->internalId}%{$this->externalId}%");
