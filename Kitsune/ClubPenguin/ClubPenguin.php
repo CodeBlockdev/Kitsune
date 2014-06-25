@@ -5,6 +5,7 @@ namespace Kitsune\ClubPenguin;
 use Kitsune;
 use Kitsune\Logging\Logger;
 use Kitsune\ClubPenguin\Packets\Packet;
+use Kitsune\ClubPenguin\Plugins\Base\IPlugin as Plugin;
 
 abstract class ClubPenguin extends Kitsune\Kitsune {
 
@@ -45,6 +46,28 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		
 		$pluginObject = new $pluginPath($this);
 		$this->loadedPlugins[$pluginClass] = $pluginObject;
+		
+		if(!empty($pluginObject->xmlHandlers)) {
+			foreach($pluginObject->xmlHandlers as $xmlHandler => $handlerProperties) {
+				list($handlerCallback, $callInformation) = $handlerProperties;
+				
+				if($callInformation == Plugin::Override) {
+					$this->xmlHandlers[$xmlHandler] = array($pluginObject, $handlerCallback);
+				}
+			}
+		}
+		
+		if(!empty($pluginObject->worldHandlers)) {
+			foreach($pluginObject->worldHandlers as $packetExtension => $extensionHandlers) {
+				foreach($extensionHandlers as $packetHandler => $handlerProperties) {
+					list($handlerCallback, $callInformation) = $handlerProperties;
+					
+					if($callInformation == Plugin::Override) {
+						$this->worldHandlers[$packetExtension][$packetHandler] = array($pluginObject, $handlerCallback);
+					}
+				}
+			}
+		}
 	}
 	
 	public function loadPluginFolder($pluginFolder) {
@@ -159,12 +182,30 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		if($this->penguins[$socket]->identified == true) {
 			$worldPacket = Packet::GetInstance();
 			
+			$penguin = $this->penguins[$socket];
+			
+			foreach($this->loadedPlugins as $loadedPlugin) {
+				if($loadedPlugin->worldStalker) {
+					$loadedPlugin->handleWorldPacket($penguin);
+				} elseif(isset($loadedPlugin->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
+					list($handlerCallback, $callInformation) = $loadedPlugin->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler];
+					
+					if($callInformation == Plugin::Before || $callInformation == Plugin::Both) {
+						$loadedPlugin->handleWorldPacket($penguin);
+					}
+				}
+			}
+			
 			if(isset($this->worldHandlers[$worldPacket::$Extension])) {
 				if(!empty($this->worldHandlers[$worldPacket::$Extension])) {
 					if(isset($this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
-						if(method_exists($this, $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
-							call_user_func(array($this, $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler]), $socket);
-						} else {
+						$handlerCallback = $this->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler];
+						
+						if(is_array($handlerCallback)) {
+							call_user_func($handlerCallback, $penguin);
+						} elseif(method_exists($this, $handlerCallback)) {
+							call_user_func(array($this, $handlerCallback), $socket);
+						} else {	
 							Logger::Warn("Method for {$worldPacket::$Extension}%{$worldPacket::$Handler} is un-callable!");
 						}
 					} else {
@@ -178,11 +219,16 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 			}
 			
 			foreach($this->loadedPlugins as $loadedPlugin) {
-				if(!empty($loadedPlugin->worldHandlers)) {
-					$loadedPlugin->handleWorldPacket($this->penguins[$socket]);
+				if($loadedPlugin->worldStalker) {
+					$loadedPlugin->handleWorldPacket($penguin, false);
+				} elseif(isset($loadedPlugin->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler])) {
+					list($handlerCallback, $callInformation) = $loadedPlugin->worldHandlers[$worldPacket::$Extension][$worldPacket::$Handler];
+					
+					if($callInformation == Plugin::After || $callInformation == Plugin::Both) {
+						$loadedPlugin->handleWorldPacket($penguin, false);
+					}
 				}
 			}
-			
 		} else {
 			$this->removePenguin($this->penguins[$socket]);
 		}
