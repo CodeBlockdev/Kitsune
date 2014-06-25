@@ -16,10 +16,18 @@ class Room {
 	
 	public function add($penguin) {
 		array_push($this->penguins, $penguin);
-		
-		$room_string = $this->getRoomString();
-		$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$room_string%");
-		$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
+		if($this->externalId > 899) {
+			$nonBlackholeGames = array(900, 909, 956, 950, 963, 121);
+			if(in_array($this->externalId, $nonBlackholeGames)) {
+				$penguin->send("%xt%jnbhg%{$this->internalId}%{$this->externalId}%");
+			} else {
+				$penguin->send("%xt%jg%{$this->internalId}%{$this->externalId}%");
+			}
+		} else {
+			$room_string = $this->getRoomString();
+			$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$room_string%");
+			$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
+		}
 		$penguin->room = $this;
 	}
 	
@@ -33,6 +41,10 @@ class Room {
 		foreach($this->penguins as $penguin) {
 			$penguin->send($data);
 		}
+	}
+	
+	public function refreshRoom($penguin) {
+		$penguin->send("%xt%grs%-1%{$this->externalId}%{$this->getRoomString()}%");
 	}
 	
 	private function getRoomString() {

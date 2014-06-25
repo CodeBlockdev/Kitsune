@@ -12,6 +12,7 @@ final class World extends ClubPenguin {
 			"j#js" => "handleJoinWorld",
 			"j#jr" => "handleJoinRoom",
 			"j#jp" => "handleJoinPlayerRoom",
+			"j#grs" => "handleRefreshRoom",
 			
 			"i#gi" => "handleGetInventoryList",
 			"i#ai" => "handleBuyInventory",
@@ -90,7 +91,11 @@ final class World extends ClubPenguin {
 			"p#papi" => "handleSendBuyPuffleCareItem",
 			
 			"t#at" => "handleOpenPlayerBook",
-			"t#rt" => "handleClosePlayerBook"
+			"t#rt" => "handleClosePlayerBook",
+			"bh#lnbhg" => "handleLeaveGame"
+		),
+		"z" => array(
+			"zo" => "handleGameOver"
 		)
 	);
 
@@ -101,6 +106,7 @@ final class World extends ClubPenguin {
 	public $furniture = array();
 	public $floors = array();
 	public $igloos = array();
+	public $gameStamps = array();
 	
 	public $spawnRooms = array();
 	public $penguinsById = array();
@@ -131,12 +137,27 @@ final class World extends ClubPenguin {
 			$this->rooms[$room] = new Room($room, sizeof($this->rooms) + 1);
 			unset($rooms[$room]);
 		}
+		$rooms = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/rooms.json");
+		$stamps = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/stamps.json");
+		foreach($stamps as $stampCat) {
+			if($stampCat['parent_group_id'] == 8) {
+				foreach($stampCat['stamps'] as $stamp) {
+					foreach($rooms as $room){
+						if(str_replace("Games : ", "", $stampCat['display']) == $room['display_name']) {
+							$roomId = $room['room_id'];
+						}
+					}
+					$this->gameStamps[$roomId][] = $stamp['stamp_id'];
+				}
+			}
+		}
+		unset($rooms);
+		unset($stamps);
 		
 		$agentRooms = array(210, 212, 323, 803);
 		$rockhoppersShip = array(422, 423);
 		$ninjaRooms = array(320, 321, 324, 326);
 		$hotelRooms = range(430, 434);
-		$this->pins = array_merge(range(500, 650), range(7000, 7100));
 		
 		$noSpawn = array_merge($agentRooms, $rockhoppersShip, $ninjaRooms, $hotelRooms);
 		$this->spawnRooms = array_keys(
@@ -151,6 +172,9 @@ final class World extends ClubPenguin {
 		foreach($items as $item) {
 			$itemId = $item["paper_item_id"];
 			$this->items[$itemId] = $item["cost"];
+			if($item['type'] == 8) {
+				$this->pins[] = $item["paper_item_id"];
+			}
 			unset($items[$itemId]);
 		}
 		
@@ -198,6 +222,52 @@ final class World extends ClubPenguin {
 		
 		if(is_numeric($toyId) && is_numeric(Packet::$Data[3])) {
 			$penguin->room->send("%xt%at%{$penguin->room->internalId}%{$penguin->id}%$toyId%1%");
+		}
+	}
+	
+	protected function handleLeaveGame($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%lnbhg%{$penguin->room->internalId}%{$penguin->room->externalId}%");
+	}
+	
+	protected function handleRefreshRoom($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->room->refreshRoom($penguin);
+	}
+	
+	protected function handleGameOver($socket) {
+		$penguin = $this->penguins[$socket];
+		$score = Packet::$Data[2];
+		if($penguin->room->externalId < 900) {
+			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%%0%0%0%");
+			return;
+		}
+		if(is_numeric($score)) {
+			$coins = (strlen($score) > 1 ? round($score / 10) : $score);
+			if($score < 99999) {
+				$penguin->setCoins($penguin->coins + $coins);
+			}
+		}
+		if(isset($this->gameStamps[$penguin->room->externalId])) {
+			$myStamps = explode(",", $penguin->database->getColumnById($penguin->id, "Stamps"));
+			$collectedStamps = "";
+			$totalGameStamps = 0;
+			foreach($myStamps as $stamp) {
+				if(in_array($stamp, $this->gameStamps[$penguin->room->externalId])) {
+					$collectedStamps .= $stamp."|";
+				}
+				foreach($this->gameStamps as $gameArray) {
+					if(in_array($stamp, $gameArray)){
+						$totalGameStamps += 1;
+					}
+				}
+			}
+			$totalStamps = count(explode("|", $collectedStamps)) - 1;
+			$totalStampsGame = count($this->gameStamps[$penguin->room->externalId]);
+			$collectedStamps = rtrim($collectedStamps, "|");
+			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%$collectedStamps%$totalStamps%$totalStampsGame%$totalGameStamps%");
+		} else {	
+			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%%0%0%0%");
 		}
 	}
 	
@@ -300,7 +370,8 @@ final class World extends ClubPenguin {
 			$stamps = $penguin->database->getColumnById($penguin->id, "Stamps");
 			if(strpos($stamps, $stampId.",") === false) {
 				$penguin->database->updateColumnById($penguin->id, "Stamps", $stamps . $stampId . ",");
-				$penguin->send("%xt%sse%-1%$stampId%{$penguin->coins}%");
+				$penguin->send("%xt%aabs%-1%$stampId%{$penguin->coins}%");
+				$penguin->recentStamps .= $stampId."|";
 			}
 		}
 	}
@@ -316,7 +387,8 @@ final class World extends ClubPenguin {
 	
 	protected function handleGetRecentStamps($socket) {
 		$penguin = $this->penguins[$socket];
-		$penguin->send("%xt%gmres%-1%%");
+		$recentStamps = rtrim($penguin->recentStamps, "|");
+		$penguin->send("%xt%gmres%-1%$recentStamps%");
 	}
 	
 	protected function handleGetBookCover($socket) {
@@ -332,10 +404,23 @@ final class World extends ClubPenguin {
 		$penguin = $this->penguins[$socket];
 		if(is_numeric(Packet::$Data[2].Packet::$Data[3].Packet::$Data[4].Packet::$Data[5])) {
 			$newCover = Packet::$Data[2]."%".Packet::$Data[3]."%".Packet::$Data[4]."%".Packet::$Data[5];
-			if(count(Packet::$Data) > 5){
-				foreach(range(6, 12) as $num){
-					if(isset(Packet::$Data[$num])){
-						$newCover .= "%" . Packet::$Data[$num];
+			if(count(Packet::$Data) > 5) {
+				foreach(range(6, 12) as $num) {
+					if(isset(Packet::$Data[$num])) {
+						$update = true;
+						$details = explode("|", Packet::$Data[$num]);
+						foreach($details as $extra) {
+							if(!is_numeric($extra)) {
+								$update = false;
+							}
+						}
+						$stamps = explode(",", $penguin->database->getColumnById($penguin->id, "Stamps"));
+						if(!in_array($details[1], $stamps) && !in_array($details[1], $this->pins)) {
+							$update = false;
+						}
+						if($update) {
+							$newCover .= "%" . Packet::$Data[$num];
+						}
 					}
 				}
 			}
@@ -401,7 +486,7 @@ final class World extends ClubPenguin {
 				if($targetPlayer !== null) {
 					if($banDuration !== 0){
 						$targetPlayer->database->updateColumnById($targetPlayer->id, "Banned", strtotime("+".$banDuration." hours"));
-					}else{
+					} else {
 						$targetPlayer->database->updateColumnById($targetPlayer->id, "Banned", "perm");
 					}
 					$targetPlayer->send("%xt%ban%-1%$banType%$banReason%$banDuration%$banNotes%");

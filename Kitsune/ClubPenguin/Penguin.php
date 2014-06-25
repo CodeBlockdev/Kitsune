@@ -30,6 +30,7 @@ class Penguin {
 	public $locations = array();
 	public $floors = array();
 	public $igloos = array();
+	public $recentStamps = "";
 	
 	public $x = 0;
 	public $y = 0;
