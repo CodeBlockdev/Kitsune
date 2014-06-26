@@ -66,9 +66,9 @@ trait Moderation {
 			if(is_numeric($player)) {
 				$targetPlayer = $this->getPlayerById($player);
 				if($targetPlayer !== null) {
-					if($banDuration !== 0){
+					if($banDuration !== 0) {
 						$targetPlayer->database->updateColumnById($targetPlayer->id, "Banned", strtotime("+".$banDuration." hours"));
-					}else{
+					} else {
 						$targetPlayer->database->updateColumnById($targetPlayer->id, "Banned", "perm");
 					}
 					$targetPlayer->send("%xt%ban%-1%$banType%$banReason%$banDuration%$banNotes%");
