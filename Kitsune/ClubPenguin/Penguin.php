@@ -26,12 +26,15 @@ class Penguin {
 	public $moderator;
 	public $muted = false;
 	
+	public $membershipDays;
+	
 	public $activeIgloo;
 	
 	public $furniture = array();
 	public $locations = array();
 	public $floors = array();
 	public $igloos = array();
+	public $recentStamps = "";
 	
 	public $x = 0;
 	public $y = 0;
@@ -297,6 +300,8 @@ class Penguin {
 		list($this->color, $this->head, $this->face, $this->neck, $this->body, $this->hand, $this->feet, $this->photo, $this->flag) = array_values($playerArray);
 		
 		$this->age = floor((strtotime("NOW") - $playerArray["RegistrationDate"]) / 86400); 
+		$this->membershipDays = $this->age;
+		
 		$this->avatar = $playerArray["Avatar"];
 		$this->coins = $playerArray["Coins"];
 		$this->moderator = (boolean)$playerArray["Moderator"];
@@ -336,7 +341,7 @@ class Penguin {
 			$this->y,
 			$this->frame,
 			1,
-			146,
+			$this->membershipDays,
 			0,
 			$this->avatar
 		);
