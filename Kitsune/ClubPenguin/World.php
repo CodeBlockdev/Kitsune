@@ -92,10 +92,18 @@ final class World extends ClubPenguin {
 			
 			"t#at" => "handleOpenPlayerBook",
 			"t#rt" => "handleClosePlayerBook",
-			"bh#lnbhg" => "handleLeaveGame"
+			"bh#lnbhg" => "handleLeaveGame",
+			
+			"f#epfga"	=>	"handleGetAgentStatus",
+			"f#epfsa"	=>	"handleSetAgentStatus",
+			"f#epfgr"	=>	"handleGetAgentPoints",
+			"f#epfai"	=>	"handleAddAgentItem",
+			"f#epfgm"	=>	"handleGetComMessages"
 		),
 		"z" => array(
-			"zo" => "handleGameOver"
+			"zo" => "handleGameOver",
+			"zr" => "handleGetRandomGames",
+			"zc" => "handleGameComplete"
 		)
 	);
 
@@ -107,6 +115,7 @@ final class World extends ClubPenguin {
 	public $floors = array();
 	public $igloos = array();
 	public $gameStamps = array();
+	public $epfItems = array();
 	
 	public $spawnRooms = array();
 	public $penguinsById = array();
@@ -175,6 +184,9 @@ final class World extends ClubPenguin {
 			if($item['type'] == 8) {
 				$this->pins[] = $item["paper_item_id"];
 			}
+			if(isset($item['is_epf'])){
+				$this->epfItems[$item["paper_item_id"]] = $item["cost"];
+			}
 			unset($items[$itemId]);
 		}
 		
@@ -228,6 +240,67 @@ final class World extends ClubPenguin {
 	protected function handleLeaveGame($socket) {
 		$penguin = $this->penguins[$socket];
 		$penguin->send("%xt%lnbhg%{$penguin->room->internalId}%{$penguin->room->externalId}%");
+	}
+	
+	protected function handleGetAgentStatus($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%epfga%-1%{$penguin->EPF['status']}%");
+	}
+	
+	protected function handleSetAgentStatus($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%epfsa%-1%1%");
+		$penguin->EPF['status'] = 1;
+		$penguin->database->updateColumnById($penguin->id, "EPF", implode(",", $penguin->EPF));
+	}
+
+	protected function handleGetAgentPoints($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%epfgr%-1%{$penguin->EPF['career']}%{$penguin->EPF['points']}%");
+	}
+	
+	protected function handleAddAgentItem($socket) {
+		$penguin = $this->penguins[$socket];
+		$itemId = Packet::$Data[2];
+		if(isset($this->epfItems[$itemId])) {
+			if($penguin->EPF['points'] >= $this->epfItems[$itemId]) {
+				if(!isset($penguin->inventory[$itemId])) {
+					$penguin->EPF['points'] -= $this->epfItems[$itemId];
+					$penguin->database->updateColumnById($penguin->id, "EPF", implode(",", $penguin->EPF));
+					$penguin->send("%xt%epfai%-1%{$penguin->EPF['points']}%");
+					array_push($penguin->inventory, $itemId);
+					$penguin->database->updateColumnById($penguin->id, "Inventory", implode('%', $penguin->inventory));
+				} else {
+					$penguin->send("%xt%e%-1%400%");
+				}
+			} else {
+				$penguin->send("%xt%e%-1%405%");
+			}
+		} else {
+			$penguin->send("%xt%e%-1%402%");
+		}
+	}
+	
+	protected function handleGetComMessages($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%epfgm%-1%0%This CPPS is powered by Kitsune!|".time()."|10%");
+	}
+	
+	protected function handleGetRandomGames($socket) {
+		$penguin = $this->penguins[$socket];
+		$penguin->send("%xt%zr%{$penguin->room->internalId}%" . rand(1, 10) . "," . rand(1, 10) . "," . rand(1, 10) . "%" . rand(1, 5) . "%");
+	}
+	
+	protected function handleGameComplete($socket) {
+		$penguin = $this->penguins[$socket];
+		$points = Packet::$Data[2];
+		$internalId = Packet::$Data[1];
+		if($points < 6 && $internalId == $penguin->room->internalId) {
+			$penguin->EPF['points'] += $points;
+			$penguin->EPF['career'] += $points;
+			$penguin->database->updateColumnById($penguin->id, "EPF", implode(",", $penguin->EPF));
+			$penguin->send("%xt%zc%{$penguin->room->internalId}%%0%0%0%");
+		}
 	}
 	
 	protected function handleRefreshRoom($socket) {
@@ -1257,7 +1330,11 @@ final class World extends ClubPenguin {
 		$penguin->send("%xt%activefeatures%-1%");
 		
 		$isModerator = intval($penguin->moderator);
-		$penguin->send("%xt%js%-1%1%0%$isModerator%1%");
+		list($penguin->EPF['status'], $penguin->EPF['points'], $penguin->EPF['career']) = explode(",", $penguin->database->getColumnById($penguin->id, "EPF"));
+		$penguin->EPF = array_reverse($penguin->EPF);
+
+
+		$penguin->send("%xt%js%-1%1%{$penguin->EPF['status']}%$isModerator%1%");
 		$stamps = rtrim(str_replace(",", "|", $penguin->database->getColumnById($penguin->id, "Stamps")), "|");
 		$penguin->send("%xt%gps%-1%{$penguin->id}%$stamps%");
 		

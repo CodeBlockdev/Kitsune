@@ -31,6 +31,7 @@ class Penguin {
 	public $floors = array();
 	public $igloos = array();
 	public $recentStamps = "";
+	public $EPF = array();
 	
 	public $x = 0;
 	public $y = 0;

@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 21, 2014 at 10:57 PM
+-- Generation Time: Jun 26, 2014 at 03:30 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Banned` varchar(20) NOT NULL DEFAULT '0' COMMENT 'Timestamp of ban',
   `Stamps` text NOT NULL,
   `StampBook` varchar(150) NOT NULL DEFAULT '1%1%1%1',
+  `EPF` varchar(9) NOT NULL DEFAULT '0,0,0',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=101 ;
