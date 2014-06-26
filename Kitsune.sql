@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 22, 2014 at 05:54 AM
+-- Generation Time: Jun 26, 2014 at 09:45 PM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -53,7 +53,8 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `LoginKey` char(32) NOT NULL,
   `ConfirmationHash` char(32) NOT NULL,
   `SWID` char(38) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
-  `Avatar` char(98) NOT NULL DEFAULT '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}',
+  `Avatar` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'Don''t think ID will go beyond 255',
+  `AvatarAttributes` char(98) NOT NULL DEFAULT '{"spriteScale":100,"spriteSpeed":100,"ignoresBlockLayer":false,"invisible":false,"floating":false}',
   `Email` char(254) NOT NULL,
   `RegistrationDate` int(8) NOT NULL,
   `Moderator` tinyint(1) NOT NULL DEFAULT '0',
@@ -78,6 +79,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Banned` varchar(20) NOT NULL DEFAULT '0' COMMENT 'Timestamp of ban',
   `Stamps` text NOT NULL,
   `StampBook` varchar(150) NOT NULL DEFAULT '1%1%1%1',
+  `EPF` varchar(9) NOT NULL DEFAULT '0,0,0',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=101 ;
