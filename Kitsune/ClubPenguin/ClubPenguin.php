@@ -20,7 +20,7 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		// Overridden in the World class
 	);
 	
-	protected $loadedPlugins = array();
+	public $loadedPlugins = array();
 	
 	protected function __construct($loadPlugins = true, $pluginsDirectory = "Kitsune/ClubPenguin/Plugins/") {
 		if($loadPlugins === true) {
@@ -31,9 +31,9 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	public function checkPluginDependencies() {
 		foreach($this->loadedPlugins as $pluginClass => $pluginObject) {
 			if(!empty($pluginObject->dependencies)) {
-				foreach($pluginObject->dependencies as $pluginDependency) {
-					if(!isset($this->loadedPlugins[$pluginDependency])) {
-						Logger::Warn("Depdency '$pluginDependency' for plugin '$pluginClass' not loaded!");
+				foreach($pluginObject->dependencies as $dependencyKey => $dependencyValue) {
+					if(!isset($this->loadedPlugins[$dependencyKey]) && !isset($this->loadedPlugins[$dependencyValue])) {
+						Logger::Warn("Dependency '$pluginDependency' for plugin '$pluginClass' not loaded!");
 						unset($this->loadedPlugins[$pluginClass]);
 					}
 				}
@@ -47,6 +47,16 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		$pluginObject = new $pluginPath($this);
 		$this->loadedPlugins[$pluginClass] = $pluginObject;
 		
+		$removePlugin = false;
+		
+		if(empty($this->worldHandlers) && $pluginObject->loginServer !== true) {		
+			unset($this->loadedPlugins[$pluginClass]);
+			
+			unset($pluginObject);
+			
+			return false;
+		}
+		
 		if(!empty($pluginObject->xmlHandlers)) {
 			foreach($pluginObject->xmlHandlers as $xmlHandler => $handlerProperties) {
 				list($handlerCallback, $callInformation) = $handlerProperties;
@@ -59,15 +69,29 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		
 		if(!empty($pluginObject->worldHandlers)) {
 			foreach($pluginObject->worldHandlers as $packetExtension => $extensionHandlers) {
-				foreach($extensionHandlers as $packetHandler => $handlerProperties) {
-					list($handlerCallback, $callInformation) = $handlerProperties;
-					
-					if($callInformation == Plugin::Override) {
-						$this->worldHandlers[$packetExtension][$packetHandler] = array($pluginObject, $handlerCallback);
+				if($packetExtension != null && $extensionHandlers !== null) {
+					foreach($extensionHandlers as $packetHandler => $handlerProperties) {
+						list($handlerCallback, $callInformation) = $handlerProperties;
+						
+						if($callInformation == Plugin::Override) {
+							$this->worldHandlers[$packetExtension][$packetHandler] = array($pluginObject, $handlerCallback);
+						}
 					}
 				}
 			}
 		}
+		
+		foreach($this->loadedPlugins as $loadedPlugin) {
+			if(!empty($loadedPlugin->dependencies)) {
+				if(isset($loadedPlugin->dependencies[$pluginClass])) {
+					$onloadCallback = $loadedPlugin->dependencies[$pluginClass];
+					
+					call_user_func(array($loadedPlugin, $onloadCallback));
+				}
+			}
+		}
+		
+		$pluginObject->onReady();
 	}
 	
 	public function loadPluginFolder($pluginFolder) {
@@ -114,9 +138,7 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	public function loadPlugins($pluginsDirectory) {
 		if(!is_dir($pluginsDirectory)) {
 			Logger::Error("Plugins directory ($pluginsDirectory) does not exist!");
-		} else {
-			Logger::Info("Loading plugins");
-			
+		} else {			
 			$pluginFolders = scandir($pluginsDirectory);
 			$pluginFolders = array_splice($pluginFolders, 2);
 			
@@ -137,7 +159,13 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 			// Check dependencies
 			$this->checkPluginDependencies();
 			
-			Logger::Info(sprintf("Loaded %d plugin(s)", sizeof($this->loadedPlugins)));
+			$pluginCount = sizeof($this->loadedPlugins);
+			
+			if($pluginCount != 0) {
+				Logger::Info(sprintf("Loaded %d plugin(s): %s", $pluginCount, implode(', ', array_keys($this->loadedPlugins))));
+			} else {
+				Logger::Info("No plugins loaded");
+			}
 		}
 	}
 	
@@ -164,17 +192,44 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	protected function handleXmlPacket($socket) {
 		$xmlPacket = Packet::GetInstance();
 		
-		if(array_key_exists($xmlPacket::$Handler, $this->xmlHandlers)) {
-			$method = $this->xmlHandlers[$xmlPacket::$Handler];
-			call_user_func(array($this, $method), $socket);
-			
-			foreach($this->loadedPlugins as $loadedPlugin) {
-				if(!empty($loadedPlugin->xmlHandlers)) {
-					$loadedPlugin->handleXmlPacket($this->penguins[$socket]);
+		$penguin = $this->penguins[$socket];
+		
+		foreach($this->loadedPlugins as $loadedPlugin) {
+			if($loadedPlugin->loginStalker) {
+				$loadedPlugin->handleXmlPacket($penguin);
+			} elseif(isset($loadedPlugin->xmlHandlers[$xmlPacket::$Handler])) {
+				list($handlerCallback, $callInformation) = $loadedPlugin->xmlHandlers[$xmlPacket::$Handler];
+				
+				if($callInformation == Plugin::Before || $callInformation == Plugin::Both) {
+					$loadedPlugin->handleXmlPacket($penguin);
 				}
 			}
-		} else {		
+		}
+		
+		if(isset($this->xmlHandlers[$xmlPacket::$Handler])) {
+			$handlerCallback = $this->xmlHandlers[$xmlPacket::$Handler];
+			
+			if(is_array($handlerCallback)) {
+				call_user_func($handlerCallback, $penguin);
+			} elseif(method_exists($this, $handlerCallback)) {
+				call_user_func(array($this, $handlerCallback), $socket);
+			} else {	
+				Logger::Warn("Method for {$xmlPacket::$Handler} is un-callable!");
+			}
+		} else {
 			Logger::Warn("Method for {$xmlPacket::$Handler} not found!");
+		}
+		
+		foreach($this->loadedPlugins as $loadedPlugin) {
+			if($loadedPlugin->loginStalker) {
+				$loadedPlugin->handleXmlPacket($penguin);
+			} elseif(isset($loadedPlugin->xmlHandlers[$xmlPacket::$Handler])) {
+				list($handlerCallback, $callInformation) = $loadedPlugin->xmlHandlers[$xmlPacket::$Handler];
+				
+				if($callInformation == Plugin::After || $callInformation == Plugin::Both) {
+					$loadedPlugin->handleXmlPacket($penguin);
+				}
+			}
 		}
 	}
 	

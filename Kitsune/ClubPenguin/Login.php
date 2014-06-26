@@ -7,7 +7,9 @@ use Kitsune\ClubPenguin\Packets\Packet;
 
 final class Login extends ClubPenguin {
 
-	public function __construct() {
+	public function __construct() {	
+		parent::__construct();
+		
 		Logger::Fine("Login server is online");
 	}
 
@@ -15,8 +17,6 @@ final class Login extends ClubPenguin {
 		$penguin = $this->penguins[$socket];
 		$username = Packet::$Data['body']['login']['nick'];
 		$password = Packet::$Data['body']['login']['pword'];
-		
-		Logger::Notice("$username is attempting to login");
 		
 		if($penguin->database->usernameExists($username) === false) {
 			$penguin->send("%xt%e%-1%101%");
@@ -38,9 +38,7 @@ final class Login extends ClubPenguin {
 				$penguin->send("%xt%e%-1%603%");
 				$this->removePenguin($penguin);
 			}
-		} else {
-			Logger::Notice("Login is successful!");
-			
+		} else {			
 			$confirmationHash = md5($penguin->randomKey);
 			$friendsKey = md5($penguinData["ID"]); // May need to change this later!
 			$loginTime = time();

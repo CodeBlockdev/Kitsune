@@ -2,18 +2,21 @@
 
 namespace Kitsune\ClubPenguin\Plugins\Commands;
 
+use Kitsune\Logging\Logger;
 use Kitsune\ClubPenguin\Packets\Packet;
 use Kitsune\ClubPenguin\Plugins\Base\Plugin;
 
 final class Commands extends Plugin {
 	
-	public $dependencies = array("Ranks");
+	public $dependencies = array("Ranks", "PatchedItems" => "loadPatchedItems");
 	
 	public $worldHandlers = array(
 		"s" => array(
 			"m#sm" => array("handlePlayerMessage", self::Both)
 		)
 	);
+	
+	public $xmlHandlers = array(null);
 	
 	private $commandPrefixes = array("!", "/");
 	
@@ -24,18 +27,24 @@ final class Commands extends Plugin {
 	
 	private $mutedPenguins = array();
 	
+	private $patchedItems;
+	
 	public function __construct($server) {
 		$this->server = $server;
-		
+	}
+	
+	public function onReady() {
 		parent::__construct(__CLASS__);
 	}
 	
-	private function buyItem($penguin, $arguments) {
+	public function loadPatchedItems() {
+		$this->patchedItems = $this->server->loadedPlugins["PatchedItems"];
+	}
+	
+	public function buyItem($penguin, $arguments) {
 		list($itemId) = $arguments;
 		
-		if(isset($this->server->items[$itemId])) {
-			$penguin->addItem($itemId, 0);
-		}
+		$this->patchedItems->handleBuyInventory($penguin, $itemId);
 	}
 	
 	private function joinRoom($penguin, $arguments) {
@@ -60,6 +69,8 @@ final class Commands extends Plugin {
 			if(isset($this->commands[$command])) {
 				if(in_array($penguin, $this->mutedPenguins)) {
 					$penguin->muted = false;
+					$penguinKey = array_search($penguin, $this->mutedPenguins);
+					unset($this->mutedPenguins[$penguinKey]);
 				} else {
 					$penguin->muted = true;
 					array_push($this->mutedPenguins, $penguin);

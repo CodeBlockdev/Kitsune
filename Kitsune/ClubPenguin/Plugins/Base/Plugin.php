@@ -17,16 +17,18 @@ abstract class Plugin implements IPlugin {
 	
 	public $worldStalker = false;
 	
+	public $loginServer = false;
+	
 	protected $server = null;
 	
 	private $pluginName;
 	
 	protected function __construct($pluginName) {
-		if($this->server == null) {
-			Logger::Warn("Plugin didn't set a server object");
-		}
-		
 		$readableName = basename($pluginName);
+		
+		if($this->server == null) {
+			Logger::Warn("$readableName didn't set a server object");
+		}
 		
 		if(empty($this->xmlHandlers)) {
 			$this->loginStalker = true;
@@ -36,11 +38,21 @@ abstract class Plugin implements IPlugin {
 			$this->worldStalker = true;
 		}
 		
-		$this->pluginName = $pluginName;
+		$this->pluginName = $readableName;
 	}
 	
+	abstract public function onReady();
+	
 	public function handleXmlPacket($penguin, $beforeCall = true) {
-		
+		if(isset($this->xmlHandlers[Packet::$Handler])) {
+			list($methodName) = $this->xmlHandlers[Packet::$Handler];
+			
+			if(method_exists($this, $methodName)) {
+				call_user_func(array($this, $methodName), $penguin);
+			} else {
+				Logger::Warn("Method '$methodName' doesn't exist in plugin '{$this->pluginName}'");
+			}
+		}
 	}
 	
 	public function handleWorldPacket($penguin, $beforeCall = true) {
