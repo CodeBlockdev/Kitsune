@@ -13,7 +13,8 @@ trait Stampbook {
 			$stamps = $penguin->database->getColumnById($penguin->id, "Stamps");
 			if(strpos($stamps, $stampId.",") === false) {
 				$penguin->database->updateColumnById($penguin->id, "Stamps", $stamps . $stampId . ",");
-				$penguin->send("%xt%sse%-1%$stampId%{$penguin->coins}%");
+				$penguin->send("%xt%aabs%-1%$stampId%{$penguin->coins}%");
+				$penguin->recentStamps .= $stampId."|";
 			}
 		}
 	}
@@ -29,7 +30,9 @@ trait Stampbook {
 	
 	protected function handleGetRecentStamps($socket) {
 		$penguin = $this->penguins[$socket];
-		$penguin->send("%xt%gmres%-1%%");
+		
+		$recentStamps = rtrim($penguin->recentStamps, "|");
+		$penguin->send("%xt%gmres%-1%$recentStamps%");
 	}
 	
 	protected function handleGetBookCover($socket) {
@@ -45,13 +48,28 @@ trait Stampbook {
 		$penguin = $this->penguins[$socket];
 		if(is_numeric(Packet::$Data[2].Packet::$Data[3].Packet::$Data[4].Packet::$Data[5])) {
 			$newCover = Packet::$Data[2]."%".Packet::$Data[3]."%".Packet::$Data[4]."%".Packet::$Data[5];
-			if(count(Packet::$Data) > 5){
-				foreach(range(6, 12) as $num){
-					if(isset(Packet::$Data[$num])){
-						$newCover .= "%" . Packet::$Data[$num];
+			
+			if(count(Packet::$Data) > 5) {
+				foreach(range(6, 12) as $num) {
+					if(isset(Packet::$Data[$num])) {
+						$update = true;
+						$details = explode("|", Packet::$Data[$num]);
+						foreach($details as $extra) {
+							if(!is_numeric($extra)) {
+								$update = false;
+							}
+						}
+						$stamps = explode(",", $penguin->database->getColumnById($penguin->id, "Stamps"));
+						if(!in_array($details[1], $stamps) && !in_array($details[1], $this->pins)) {
+							$update = false;
+						}
+						if($update) {
+							$newCover .= "%" . Packet::$Data[$num];
+						}
 					}
 				}
 			}
+			
 			$penguin->database->updateColumnById($penguin->id, "StampBook", $newCover);
 		}
 		$penguin->send("%xt%ssbcd%-1%");
