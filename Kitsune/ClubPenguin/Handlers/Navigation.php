@@ -32,7 +32,12 @@ trait Navigation {
 		$penguin->send("%xt%activefeatures%-1%");
 		
 		$isModerator = intval($penguin->moderator);
-		$penguin->send("%xt%js%-1%1%0%$isModerator%1%");
+		
+		list($penguin->EPF['status'], $penguin->EPF['points'], $penguin->EPF['career']) = explode(",", $penguin->database->getColumnById($penguin->id, "EPF"));
+		$penguin->EPF = array_reverse($penguin->EPF);
+
+		$penguin->send("%xt%js%-1%1%{$penguin->EPF['status']}%$isModerator%1%");
+		
 		$stamps = rtrim(str_replace(",", "|", $penguin->database->getColumnById($penguin->id, "Stamps")), "|");
 		$penguin->send("%xt%gps%-1%{$penguin->id}%$stamps%");
 		
@@ -49,9 +54,6 @@ trait Navigation {
 		
 		$openRoom = $this->getOpenRoom();
 		$this->joinRoom($penguin, $openRoom, 0, 0);
-				
-		// The 0 after the player id is probably a transformation id, will be looking into a proper implementation
-		$penguin->room->send("%xt%spts%-1%{$penguin->id}%0%{$penguin->avatar}%");
 	}
 	
 	protected function handleJoinRoom($socket) {
@@ -73,7 +75,7 @@ trait Navigation {
 			$externalId = $playerId + 1000;
 			
 			if(!isset($this->rooms[$externalId])) {
-				$this->rooms[$externalId] = new Room($externalId, $playerId);
+				$this->rooms[$externalId] = new Room($externalId, $playerId, false);
 			}
 			
 			$penguin->send("%xt%jp%$playerId%$playerId%$externalId%$roomType%");
