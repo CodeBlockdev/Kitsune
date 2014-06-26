@@ -98,7 +98,16 @@ final class World extends ClubPenguin {
 			
 			"t#at" => "handleOpenPlayerBook",
 			"t#rt" => "handleClosePlayerBook",
-			"bh#lnbhg" => "handleLeaveGame"
+			
+			"bh#lnbhg" => "handleLeaveGame",
+			
+			"f#epfga"	=>	"handleGetAgentStatus",
+			"f#epfsa"	=>	"handleSetAgentStatus",
+			"f#epfgr"	=>	"handleGetAgentPoints",
+			"f#epfai"	=>	"handleAddAgentItem",
+			"f#epfgm"	=>	"handleGetComMessages",
+			
+			"pt#spts" => "handleAvatarTransformation"
 		),
 		
 		"z" => array(
@@ -120,15 +129,21 @@ final class World extends ClubPenguin {
 	use Handlers\Toy;
 	use Handlers\Stampbook;
 	use Handlers\Blackhole;
+	use Handlers\EPF;
+	use Handlers\PlayerTransformation;
 	
-	public $rooms = array();
 	public $items = array();
 	public $pins = array();
+	
+	public $rooms = array();
+	
 	public $locations = array();
 	public $furniture = array();
 	public $floors = array();
 	public $igloos = array();
+	
 	public $gameStamps = array();
+	public $epfItems = array();
 	
 	public $spawnRooms = array();
 	public $penguinsById = array();
@@ -203,6 +218,10 @@ final class World extends ClubPenguin {
 			
 			if($item["type"] == 8) {
 				array_push($this->pins, $itemId);
+			}
+			
+			if(isset($item['is_epf'])) {
+				$this->epfItems[$item["paper_item_id"]] = $item["cost"];
 			}
 			
 			unset($items[$itemIndex]);
