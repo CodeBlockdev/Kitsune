@@ -315,8 +315,6 @@ trait Igloo {
 		$penguin = $this->penguins[$socket];
 		$playerId = Packet::$Data[1];
 		
-		include "Misc/array_column.php";
-		
 		if($penguin->database->playerIdExists($playerId)) {
 			$activeIgloo = $penguin->database->getColumnById($playerId, "Igloo");
 			$iglooLikes = $penguin->database->getIglooLikes($activeIgloo);

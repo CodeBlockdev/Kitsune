@@ -328,9 +328,7 @@ class Database extends \PDO {
 	}
 	
 	public function getTotalIglooLikes($ownerId) {
-		try {
-			if(!function_exists("array_column")) include "Misc/array_column.php";
-			
+		try {			
 			$totalLikesStatement = $this->prepare("SELECT Likes FROM `igloos` WHERE Owner = :Owner");
 			$totalLikesStatement->bindValue(":Owner", $ownerId);
 			$totalLikesStatement->execute();
@@ -479,9 +477,7 @@ class Database extends \PDO {
 			
 	
 	public function getAllIglooLayouts($playerId) {
-		try {
-			include "Misc/array_column.php";
-			
+		try {			
 			$igloosStatement = $this->prepare("SELECT ID FROM `igloos` WHERE Owner = :Owner");
 			$igloosStatement->bindValue(":Owner", $playerId);
 			$igloosStatement->execute();
