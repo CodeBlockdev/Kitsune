@@ -13,6 +13,7 @@ final class World extends ClubPenguin {
 			"j#js" => "handleJoinWorld",
 			"j#jr" => "handleJoinRoom",
 			"j#jp" => "handleJoinPlayerRoom",
+			"j#grs" => "handleRefreshRoom",
 			
 			"i#gi" => "handleGetInventoryList",
 			"i#ai" => "handleBuyInventory",
@@ -31,6 +32,7 @@ final class World extends ClubPenguin {
 			"u#gbffl" => "handleGetBestFriendsList",
 			"u#pbsu" => "handlePlayerBySwidUsername",
 			"u#ss" => "handleSafeMessage",
+			"u#followpath" => "handlePenguinOnSlideOrZipline",
 			
 			"l#mg" => "handleGetMail",
 			"l#mst" => "handleStartMailEngine",
@@ -95,12 +97,14 @@ final class World extends ClubPenguin {
 			"p#pp" => "handleSendPufflePlay",
 			
 			"t#at" => "handleOpenPlayerBook",
-			"t#rt" => "handleClosePlayerBook"
+			"t#rt" => "handleClosePlayerBook",
+			"bh#lnbhg" => "handleLeaveGame"
 		),
 		
 		"z" => array(
 			"gz" => "handleGetGame",
-			"m" => "handleGameMove"
+			"m" => "handleGameMove",
+			"zo" => "handleGameOver"
 		)
 	);
 	
@@ -115,6 +119,7 @@ final class World extends ClubPenguin {
 	use Handlers\Pet;
 	use Handlers\Toy;
 	use Handlers\Stampbook;
+	use Handlers\Blackhole;
 	
 	public $rooms = array();
 	public $items = array();
@@ -123,6 +128,7 @@ final class World extends ClubPenguin {
 	public $furniture = array();
 	public $floors = array();
 	public $igloos = array();
+	public $gameStamps = array();
 	
 	public $spawnRooms = array();
 	public $penguinsById = array();
@@ -154,9 +160,26 @@ final class World extends ClubPenguin {
 		
 		$rooms = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/rooms.json");
 		foreach($rooms as $room => $details) {
-			$this->rooms[$room] = new Room($room, sizeof($this->rooms) + 1);
-			unset($rooms[$room]);
+			$this->rooms[$room] = new Room($room, sizeof($this->rooms) + 1, ($details['path'] == '' ? true : false));
 		}
+		
+		$stamps = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/stamps.json");
+		foreach($stamps as $stampCat) {
+			if($stampCat['parent_group_id'] == 8) {
+				foreach($stampCat['stamps'] as $stamp) {
+					foreach($rooms as $room){
+						if(str_replace("Games : ", "", $stampCat['display']) == $room['display_name']) {
+							$roomId = $room['room_id'];
+						}
+					}
+					
+					$this->gameStamps[$roomId][] = $stamp['stamp_id'];
+				}
+			}
+		}
+
+		unset($rooms);
+		unset($stamps);
 		
 		$agentRooms = array(210, 212, 323, 803);
 		$rockhoppersShip = array(422, 423);
@@ -226,6 +249,52 @@ final class World extends ClubPenguin {
 		}
 		
 		Logger::Fine("World server is online");
+	}
+	
+	protected function handleGameOver($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$score = Packet::$Data[2];
+		
+		if($penguin->room->externalId < 900) {
+			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%%0%0%0%");
+
+			return;
+		}
+
+		if(is_numeric($score)) {
+			$coins = (strlen($score) > 1 ? round($score / 10) : $score);
+
+			if($score < 99999) {
+				$penguin->setCoins($penguin->coins + $coins);
+			}
+		}
+
+		if(isset($this->gameStamps[$penguin->room->externalId])) {
+			$myStamps = explode(",", $penguin->database->getColumnById($penguin->id, "Stamps"));
+			$collectedStamps = "";
+			$totalGameStamps = 0;
+
+			foreach($myStamps as $stamp) {
+				if(in_array($stamp, $this->gameStamps[$penguin->room->externalId])) {
+					$collectedStamps .= $stamp."|";
+				}
+
+				foreach($this->gameStamps as $gameArray) {
+					if(in_array($stamp, $gameArray)){
+						$totalGameStamps += 1;
+					}
+				}
+			}
+
+			$totalStamps = count(explode("|", $collectedStamps)) - 1;
+			$totalStampsGame = count($this->gameStamps[$penguin->room->externalId]);
+			$collectedStamps = rtrim($collectedStamps, "|");
+
+			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%$collectedStamps%$totalStamps%$totalStampsGame%$totalGameStamps%");
+		} else {	
+			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%%0%0%0%");
+		}
 	}
 	
 	public function joinRoom($penguin, $roomId, $x = 0, $y = 0) {
