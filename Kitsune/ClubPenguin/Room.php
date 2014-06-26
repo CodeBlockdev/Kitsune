@@ -9,23 +9,35 @@ class Room {
 	public $externalId;
 	public $internalId;
 	
-	public function __construct($externalId, $internalId) {
+	public function __construct($externalId, $internalId, $isGame) {
 		$this->externalId = $externalId;
 		$this->internalId = $internalId;
+		$this->isGame = $isGame;
 	}
 	
 	public function add($penguin) {
 		array_push($this->penguins, $penguin);
 		
-		$room_string = $this->getRoomString();
-		$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$room_string%");
-		$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
+		if($this->isGame) {
+			$nonBlackholeGames = array(900, 909, 956, 950, 963, 121);
+			
+			if(in_array($this->externalId, $nonBlackholeGames)) {
+				$penguin->send("%xt%jnbhg%{$this->internalId}%{$this->externalId}%");
+			} else {
+				$penguin->send("%xt%jg%{$this->internalId}%{$this->externalId}%");
+			}
+		} else {
+			$roomString = $this->getRoomString();
+			$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$roomString%");
+			$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
+		}
+		
 		$penguin->room = $this;
 	}
 	
 	public function remove($penguin) {
-		$player_index = array_search($penguin, $this->penguins);
-		unset($this->penguins[$player_index]);
+		$playerIndex = array_search($penguin, $this->penguins);
+		unset($this->penguins[$playerIndex]);
 		$this->send("%xt%rp%{$this->internalId}%{$penguin->id}%");
 	}
 	
@@ -35,12 +47,16 @@ class Room {
 		}
 	}
 	
+	public function refreshRoom($penguin) {
+		$penguin->send("%xt%grs%-1%{$this->externalId}%{$this->getRoomString()}%");
+	}
+	
 	private function getRoomString() {
-		$room_string = implode('%', array_map(function($penguin) {
+		$roomString = implode('%', array_map(function($penguin) {
 			return $penguin->getPlayerString();
 		}, $this->penguins));
 		
-		return $room_string;
+		return $roomString;
 	}
 	
 }
