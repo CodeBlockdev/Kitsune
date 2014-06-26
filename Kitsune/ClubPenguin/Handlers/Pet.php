@@ -192,6 +192,12 @@ trait Pet {
 	protected function handleSendPufflePlay($socket) {
 		Logger::Warn("Need to log packets");
 	}
+	
+	protected function handlePenguinOnSlideOrZipline($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguin->room->send("%xt%followpath%{$penguin->room->internalId}%{$penguin->id}%" .  Packet::$Data[2] ."%");
+	}
 
 }
 
