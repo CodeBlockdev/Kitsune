@@ -18,6 +18,8 @@ class Penguin {
 	public $age;
 
 	public $avatar;
+	public $avatarAttributes;
+	
 	public $coins;
 	
 	public $careInventory = array();
@@ -245,7 +247,7 @@ class Penguin {
 		$this->randomKey = null;
 		
 		$clothing = array("Color", "Head", "Face", "Neck", "Body", "Hand", "Feet", "Photo", "Flag", "Walking");
-		$player = array("Avatar", "RegistrationDate", "Moderator", "Inventory", "CareInventory", "Coins");
+		$player = array("Avatar", "AvatarAttributes", "RegistrationDate", "Moderator", "Inventory", "CareInventory", "Coins");
 		$igloo = array("Furniture", "Floors", "Igloos", "Locations");
 		
 		$columns = array_merge($clothing, $player, $igloo);
@@ -303,6 +305,8 @@ class Penguin {
 		$this->membershipDays = $this->age;
 		
 		$this->avatar = $playerArray["Avatar"];
+		$this->avatarAttributes = $playerArray["AvatarAttributes"];
+		
 		$this->coins = $playerArray["Coins"];
 		$this->moderator = (boolean)$playerArray["Moderator"];
 		$this->inventory = explode('%', $playerArray["Inventory"]);
@@ -342,8 +346,8 @@ class Penguin {
 			$this->frame,
 			1,
 			$this->membershipDays,
-			0,
-			$this->avatar
+			$this->avatar,
+			$this->avatarAttributes
 		);
 		
 		if(!empty($this->walkingPuffle)) {
