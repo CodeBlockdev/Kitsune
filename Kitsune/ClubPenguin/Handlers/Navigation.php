@@ -81,6 +81,12 @@ trait Navigation {
 		}
 	}
 	
+	protected function handleRefreshRoom($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		$penguin->room->refreshRoom($penguin);
+	}
+	
 }
 
 ?>
