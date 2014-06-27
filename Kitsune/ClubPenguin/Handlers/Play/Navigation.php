@@ -1,6 +1,6 @@
 <?php
 
-namespace Kitsune\ClubPenguin\Handlers;
+namespace Kitsune\ClubPenguin\Handlers\Play;
 
 use Kitsune\ClubPenguin\Room;
 use Kitsune\ClubPenguin\Packets\Packet;
