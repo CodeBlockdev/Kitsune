@@ -198,6 +198,28 @@ trait Pet {
 		
 		$penguin->room->send("%xt%followpath%{$penguin->room->internalId}%{$penguin->id}%" .  Packet::$Data[2] ."%");
 	}
+	
+	protected function joinPuffleData(array $puffleData, $walkingPuffleId = null, $iglooAppend = false) {
+		$puffles = implode('%', array_map(
+			function($puffle) use($walkingPuffleId, $iglooAppend) {
+				if($puffle["ID"] != $walkingPuffleId) {
+					if($puffle["Subtype"] == 0) {
+						$puffle["Subtype"] = "";
+					}
+					
+					$playerPuffle = implode('|', $puffle);
+					
+					if($iglooAppend !== false) {
+						$playerPuffle .= "|0|0|0|0";
+					}
+					
+					return $playerPuffle;
+				}
+			}, $puffleData
+		));	
+		
+		return $puffles;
+	}
 
 }
 
