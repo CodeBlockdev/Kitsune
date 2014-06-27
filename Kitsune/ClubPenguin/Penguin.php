@@ -42,6 +42,7 @@ class Penguin {
 	public $y = 0;
 	public $frame;
 	
+	public $waddleRoom = null; // Not an object!
 	public $room;
 	
 	public $walkingPuffle = array();
