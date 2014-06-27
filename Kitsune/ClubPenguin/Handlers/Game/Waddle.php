@@ -111,6 +111,8 @@ trait Waddle {
 					}
 					
 					$penguin->waddleRoom = null;
+					
+					break;
 				}
 			}
 		}
