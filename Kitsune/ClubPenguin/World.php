@@ -107,30 +107,41 @@ final class World extends ClubPenguin {
 			"f#epfai"	=>	"handleAddAgentItem",
 			"f#epfgm"	=>	"handleGetComMessages",
 			
-			"pt#spts" => "handleAvatarTransformation"
+			"pt#spts" => "handleAvatarTransformation",
+			
+			"w#jx" => "handleJoinWaddle"
 		),
 		
 		"z" => array(
 			"gz" => "handleGetGame",
 			"m" => "handleGameMove",
-			"zo" => "handleGameOver"
+			"zo" => "handleGameOver",
+			
+			"gw" => "handleGetWaddlesPopulationById",
+			"jw" => "handleSendJoinWaddleById",
+			"lw" => "handleLeaveWaddle",
+			"jz" => "handleStartGame",
+			
+			"zm" => "handleSendMove"
 		)
 	);
 	
-	use Handlers\Navigation;
-	use Handlers\Item;
-	use Handlers\Player;
-	use Handlers\Mail;
-	use Handlers\Setting;
-	use Handlers\Igloo;
-	use Handlers\Message;
-	use Handlers\Moderation;
-	use Handlers\Pet;
-	use Handlers\Toy;
-	use Handlers\Stampbook;
-	use Handlers\Blackhole;
-	use Handlers\EPF;
-	use Handlers\PlayerTransformation;
+	use Handlers\Play\Navigation;
+	use Handlers\Play\Item;
+	use Handlers\Play\Player;
+	use Handlers\Play\Mail;
+	use Handlers\Play\Setting;
+	use Handlers\Play\Igloo;
+	use Handlers\Play\Message;
+	use Handlers\Play\Moderation;
+	use Handlers\Play\Pet;
+	use Handlers\Play\Toy;
+	use Handlers\Play\Stampbook;
+	use Handlers\Play\Blackhole;
+	use Handlers\Play\EPF;
+	use Handlers\Play\PlayerTransformation;
+	
+	use Handlers\Game\Waddle;
 	
 	public $items = array();
 	public $pins = array();
@@ -316,12 +327,24 @@ final class World extends ClubPenguin {
 		}
 	}
 	
+	protected function handleSendMove($socket) {
+		$penguin = $this->penguins[$socket];
+		
+		if($penguin->waddleRoom !== null) {
+			array_shift(Packet::$Data);
+			
+			$penguin->room->send("%xt%zm%" . implode('%', Packet::$Data) . '%');
+		}
+	}
+	
 	public function joinRoom($penguin, $roomId, $x = 0, $y = 0) {
 		if(!isset($this->rooms[$roomId])) {
 			return;
 		} elseif(isset($penguin->room)) {
 			$penguin->room->remove($penguin);
 		}
+		
+		$this->leaveWaddle($penguin);
 		
 		$penguin->frame = 1;
 		$penguin->x = $x;
@@ -451,6 +474,7 @@ final class World extends ClubPenguin {
 		}
 		
 		if(isset($this->penguinsById[$penguin->id])) {
+			$this->leaveWaddle($penguin);
 			unset($this->penguinsById[$penguin->id]);
 		}
 
@@ -465,6 +489,7 @@ final class World extends ClubPenguin {
 		}
 		
 		if(isset($this->penguinsById[$penguin->id])) {
+			$this->leaveWaddle($penguin);
 			unset($this->penguinsById[$penguin->id]);
 		}
 
