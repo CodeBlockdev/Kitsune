@@ -18,20 +18,24 @@ class Room {
 	public function add($penguin) {
 		array_push($this->penguins, $penguin);
 		
-		if($this->isGame) {
-			$nonBlackholeGames = array(900, 909, 956, 950, 963, 121);
-			
-			if(in_array($this->externalId, $nonBlackholeGames)) {
-				$penguin->send("%xt%jnbhg%{$this->internalId}%{$this->externalId}%");
-			} else {
-				$penguin->send("%xt%jg%{$this->internalId}%{$this->externalId}%");
-			}
+		if($this->externalId == 999) {
+			$penguin->send("%xt%jx%{$penguin->room->internalId}%{$this->externalId}%");
 		} else {
-			$roomString = $this->getRoomString();
-			$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$roomString%");
-			$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
+			if($this->isGame) {
+				$nonBlackholeGames = array(900, 909, 956, 950, 963, 121);
+				
+				if(in_array($this->externalId, $nonBlackholeGames)) {
+					$penguin->send("%xt%jnbhg%{$this->internalId}%{$this->externalId}%");
+				} else {
+					$penguin->send("%xt%jg%{$this->internalId}%{$this->externalId}%");
+				}
+			} else {
+				$roomString = $this->getRoomString();
+				$penguin->send("%xt%jr%{$this->internalId}%{$this->externalId}%$roomString%");
+				$this->send("%xt%ap%{$this->internalId}%{$penguin->getPlayerString()}%");
+			}
 		}
-		
+			
 		$penguin->room = $this;
 	}
 	
