@@ -18,7 +18,7 @@ trait General {
 		}
 
 		if(is_numeric($score)) {
-			$coins = (strlen($score) > 1 ? round($score / 10) : (($i * strlen("Kitsune") * 250) % 84) * rand(9, 12));
+			$coins = (strlen($score) > 1 ? round($score / 10) : (($score * strlen("Kitsune") * 250) % 84) * rand(9, 12));
 
 			if($score < 99999) {
 				$penguin->setCoins($penguin->coins + $coins);
