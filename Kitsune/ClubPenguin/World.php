@@ -141,7 +141,10 @@ final class World extends ClubPenguin {
 	use Handlers\Play\EPF;
 	use Handlers\Play\PlayerTransformation;
 	
-	use Handlers\Game\Waddle;
+	use Handlers\Game\General;
+	use Handlers\Game\Rink;
+	use Handlers\Game\SledRacing;
+	use Handlers\Game\Waddle;	
 	
 	public $items = array();
 	public $pins = array();
@@ -158,10 +161,6 @@ final class World extends ClubPenguin {
 	
 	public $spawnRooms = array();
 	public $penguinsById = array();
-	
-	private $openIgloos = array();
-	
-	public $rinkPuck = array(0, 0, 0, 0);
 	
 	public function __construct() {
 		parent::__construct();
@@ -281,154 +280,12 @@ final class World extends ClubPenguin {
 		Logger::Fine("World server is online");
 	}
 	
-	protected function handleGameOver($socket) {
-		$penguin = $this->penguins[$socket];
-		
-		$score = Packet::$Data[2];
-		
-		if($penguin->room->externalId < 900) {
-			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%%0%0%0%");
-
-			return;
-		}
-
-		if(is_numeric($score)) {
-			$coins = (strlen($score) > 1 ? round($score / 10) : $score);
-
-			if($score < 99999) {
-				$penguin->setCoins($penguin->coins + $coins);
-			}
-		}
-
-		if(isset($this->gameStamps[$penguin->room->externalId])) {
-			$myStamps = explode(",", $penguin->database->getColumnById($penguin->id, "Stamps"));
-			$collectedStamps = "";
-			$totalGameStamps = 0;
-
-			foreach($myStamps as $stamp) {
-				if(in_array($stamp, $this->gameStamps[$penguin->room->externalId])) {
-					$collectedStamps .= $stamp."|";
-				}
-
-				foreach($this->gameStamps as $gameArray) {
-					if(in_array($stamp, $gameArray)){
-						$totalGameStamps += 1;
-					}
-				}
-			}
-
-			$totalStamps = count(explode("|", $collectedStamps)) - 1;
-			$totalStampsGame = count($this->gameStamps[$penguin->room->externalId]);
-			$collectedStamps = rtrim($collectedStamps, "|");
-
-			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%$collectedStamps%$totalStamps%$totalStampsGame%$totalGameStamps%");
-		} else {	
-			$penguin->send("%xt%zo%{$penguin->room->internalId}%{$penguin->coins}%%0%0%0%");
-		}
-	}
-	
-	protected function handleSendMove($socket) {
-		$penguin = $this->penguins[$socket];
-		
-		if($penguin->waddleRoom !== null) {
-			array_shift(Packet::$Data);
-			
-			$penguin->room->send("%xt%zm%" . implode('%', Packet::$Data) . '%');
-		}
-	}
-	
-	public function joinRoom($penguin, $roomId, $x = 0, $y = 0) {
-		if(!isset($this->rooms[$roomId])) {
-			return;
-		} elseif(isset($penguin->room)) {
-			$penguin->room->remove($penguin);
-		}
-		
-		$this->leaveWaddle($penguin);
-		
-		$penguin->frame = 1;
-		$penguin->x = $x;
-		$penguin->y = $y;
-		$this->rooms[$roomId]->add($penguin);
-	}
-	
-	private function getOpenRoom() {
-		$spawnRooms = $this->spawnRooms;
-		shuffle($spawnRooms);
-		
-		foreach($spawnRooms as $roomId) {
-			if(sizeof($this->rooms[$roomId]->penguins) < 75) {
-				return $roomId;
-			}
-		}
-		
-		return 100;
-	}
-	
-	protected function handleGameMove($socket) {
-		$penguin = $this->penguins[$socket];
-		
-		$this->rinkPuck = array_splice(Packet::$Data, 3);
-		
-		$puckData = implode('%', $this->rinkPuck);
-		
-		$penguin->send("%xt%zm%{$penguin->room->internalId}%{$penguin->id}%$puckData%");
-	}
-	
-	protected function handleGetGame($socket) {
-		$penguin = $this->penguins[$socket];
-		
-		$puckData = implode('%', $this->rinkPuck);
-		
-		$penguin->send("%xt%gz%{$penguin->room->internalId}%$puckData%");
-	}
-	
-	public function mutePlayer($targetPlayer, $moderatorUsername) {
-		if(!$targetPlayer->muted) {
-			$targetPlayer->muted = true;
-			$targetPlayer->send("%xt%moderatormessage%-1%2%");
-			Logger::Info("$moderatorUsername has muted {$targetPlayer->username}");
-		} else {
-			$targetPlayer->muted = false;
-			Logger::Info("$moderatorUsername has unmuted {$targetPlayer->username}");
-		}
-	}
-	
-	public function kickPlayer($targetPlayer, $moderatorUsername) {
-		$targetPlayer->send("%xt%moderatormessage%-1%3%");
-		$this->removePenguin($targetPlayer);
-		
-		Logger::Info("$moderatorUsername kicked {$targetPlayer->username}");
-	}
-	
 	public function getPlayerById($playerId) {
 		if(isset($this->penguinsById[$playerId])) {
 			return $this->penguinsById[$playerId];
 		}
 		
 		return null;
-	}
-	
-	private function joinPuffleData(array $puffleData, $walkingPuffleId = null, $iglooAppend = false) {
-		$puffles = implode('%', array_map(
-			function($puffle) use($walkingPuffleId, $iglooAppend) {
-				if($puffle["ID"] != $walkingPuffleId) {
-					if($puffle["Subtype"] == 0) {
-						$puffle["Subtype"] = "";
-					}
-					
-					$playerPuffle = implode('|', $puffle);
-					
-					if($iglooAppend !== false) {
-						$playerPuffle .= "|0|0|0|0";
-					}
-					
-					return $playerPuffle;
-				}
-			}, $puffleData
-		));	
-		
-		return $puffles;
 	}
 
 	protected function handleLogin($socket) {
