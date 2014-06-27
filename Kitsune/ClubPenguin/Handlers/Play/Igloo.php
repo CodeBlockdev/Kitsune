@@ -6,6 +6,8 @@ use Kitsune\ClubPenguin\Packets\Packet;
 
 trait Igloo {
 
+	private $openIgloos = array();
+
 	protected function handleGetFurnitureInventory($socket) {
 		$penguin = $this->penguins[$socket];
 		
