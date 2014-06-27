@@ -7,6 +7,35 @@ use Kitsune\ClubPenguin\Packets\Packet;
 
 trait Navigation {
 
+	public function joinRoom($penguin, $roomId, $x = 0, $y = 0) {
+		if(!isset($this->rooms[$roomId])) {
+			return;
+		} elseif(isset($penguin->room)) {
+			$penguin->room->remove($penguin);
+		}
+		
+		$this->leaveWaddle($penguin);
+		
+		$penguin->frame = 1;
+		$penguin->x = $x;
+		$penguin->y = $y;
+		$this->rooms[$roomId]->add($penguin);
+	}
+	
+	// Considering making this public
+	protected function getOpenRoom() {
+		$spawnRooms = $this->spawnRooms;
+		shuffle($spawnRooms);
+		
+		foreach($spawnRooms as $roomId) {
+			if(sizeof($this->rooms[$roomId]->penguins) < 75) {
+				return $roomId;
+			}
+		}
+		
+		return 100;
+	}
+	
 	protected function handleJoinWorld($socket) {
 		$penguin = $this->penguins[$socket];
 		
