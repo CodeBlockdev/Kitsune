@@ -7,6 +7,24 @@ use Kitsune\ClubPenguin\Packets\Packet;
 
 trait Moderation {
 
+	public function mutePlayer($targetPlayer, $moderatorUsername) {
+		if(!$targetPlayer->muted) {
+			$targetPlayer->muted = true;
+			$targetPlayer->send("%xt%moderatormessage%-1%2%");
+			Logger::Info("$moderatorUsername has muted {$targetPlayer->username}");
+		} else {
+			$targetPlayer->muted = false;
+			Logger::Info("$moderatorUsername has unmuted {$targetPlayer->username}");
+		}
+	}
+	
+	public function kickPlayer($targetPlayer, $moderatorUsername) {
+		$targetPlayer->send("%xt%moderatormessage%-1%3%");
+		$this->removePenguin($targetPlayer);
+		
+		Logger::Info("$moderatorUsername kicked {$targetPlayer->username}");
+	}
+	
 	protected function handleKickPlayerById($socket) {
 		$penguin = $this->penguins[$socket];
 		
