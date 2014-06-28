@@ -31,7 +31,9 @@ trait Pet {
 		$penguin = $this->penguins[$socket];
 		$puffleName = Packet::$Data[2];
 		
-		$nameOkay = intval(ctype_alpha($puffleName));
+		$checkName = str_replace(' ', '', $puffleName);
+		$nameOkay = intval(ctype_alpha($checkName));
+		
 		$penguin->send("%xt%checkpufflename%{$penguin->room->internalId}%$puffleName%$nameOkay%");
 	}
 	
