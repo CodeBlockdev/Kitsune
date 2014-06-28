@@ -8,7 +8,7 @@ use Kitsune\ClubPenguin\Plugins\Base\Plugin;
 
 final class Commands extends Plugin {
 	
-	public $dependencies = array("Ranks", "PatchedItems" => "loadPatchedItems");
+	public $dependencies = array("PatchedItems" => "loadPatchedItems");
 	
 	public $worldHandlers = array(
 		"s" => array(
