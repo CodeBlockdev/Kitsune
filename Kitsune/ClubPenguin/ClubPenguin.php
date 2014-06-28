@@ -36,6 +36,8 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 			if(!empty($pluginObject->dependencies)) {
 				foreach($pluginObject->dependencies as $dependencyKey => $dependencyValue) {
 					if(!isset($this->loadedPlugins[$dependencyKey]) && !isset($this->loadedPlugins[$dependencyValue])) {
+						$pluginDependency = is_numeric($dependencyKey) ? $dependencyValue : $dependencyKey;
+						
 						Logger::Warn("Dependency '$pluginDependency' for plugin '$pluginClass' not loaded!");
 						unset($this->loadedPlugins[$pluginClass]);
 					}
