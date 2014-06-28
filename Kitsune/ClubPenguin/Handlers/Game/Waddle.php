@@ -36,7 +36,7 @@ trait Waddle {
 		$this->leaveWaddle($penguin);
 		
 		$waddleId = Packet::$Data[2];
-		$playerSeat = sizeof($this->waddleUsers[$waddleId]);
+		$playerSeat = isset($this->waddleUsers[$waddleId]) ? sizeof($this->waddleUsers[$waddleId]) : 0;
 		
 		$this->waddleUsers[$waddleId][$playerSeat] = $penguin;
 		$this->waddlesById[$waddleId][$playerSeat] = $penguin->username;
@@ -104,7 +104,7 @@ trait Waddle {
 					$this->waddlesById[$waddleId][$playerSeat] = '';
 					unset($this->waddleUsers[$waddleId][$playerSeat]);
 					
-					if($this->waddleRoom !== null) {
+					if($penguin->waddleRoom !== null) {
 						$penguin->room->remove($penguin);
 						
 						if(empty($this->waddleRooms[$penguin->waddleRoom]->penguins)) {
