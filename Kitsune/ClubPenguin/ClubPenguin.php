@@ -23,6 +23,9 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	public $loadedPlugins = array();
 	
 	protected function __construct($loadPlugins = true, $pluginsDirectory = "Kitsune/ClubPenguin/Plugins/") {
+		$tempDatabase = new Kitsune\Database();
+		unset($tempDatabase);
+		
 		if($loadPlugins === true) {
 			$this->loadPlugins($pluginsDirectory);
 		}
