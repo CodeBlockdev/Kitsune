@@ -104,13 +104,15 @@ trait Waddle {
 					$this->waddlesById[$waddleId][$playerSeat] = '';
 					unset($this->waddleUsers[$waddleId][$playerSeat]);
 					
-					$penguin->room->remove($penguin);
-					
-					if(empty($this->waddleRooms[$penguin->waddleRoom]->penguins)) {
-						unset($this->waddleRooms[$penguin->waddleRoom]);
+					if($this->waddleRoom !== null) {
+						$penguin->room->remove($penguin);
+						
+						if(empty($this->waddleRooms[$penguin->waddleRoom]->penguins)) {
+							unset($this->waddleRooms[$penguin->waddleRoom]);
+						}
+						
+						$penguin->waddleRoom = null;
 					}
-					
-					$penguin->waddleRoom = null;
 					
 					break;
 				}
