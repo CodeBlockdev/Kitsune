@@ -17,7 +17,7 @@ class Database extends \PDO {
 			parent::__construct($connectionString, $dbConfig->username, $dbConfig->password);
 			parent::setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		} catch(\PDOException $pdoException) {
-			Logger::Warn($pdoException->getMessage());
+			Logger::Fatal($pdoException->getMessage());
 		}
 	}
 	
