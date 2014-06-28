@@ -57,6 +57,7 @@ class Logger implements ILogger {
 	
 	public static function Fatal($message) {
 		self::Log($message, self::Fatal);
+		die();
 	}
 
 }
