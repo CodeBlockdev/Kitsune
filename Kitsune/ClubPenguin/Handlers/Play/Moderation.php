@@ -64,8 +64,11 @@ trait Moderation {
 
 			if(is_numeric($playerId)) {
 				$targetPlayer = $this->getPlayerById($playerId);
+				
 				if($targetPlayer !== null) {
-					$penguin->send("%xt%initban%-1%{$playerId}%0%0%{$phrase}%{$targetPlayer->username}%");
+					$numberOfBans = $penguin->database->getNumberOfBans($playerId);
+					
+					$penguin->send("%xt%initban%-1%{$playerId}%0%$numberOfBans%{$phrase}%{$targetPlayer->username}%");
 				}
 			}
 		}
@@ -73,14 +76,15 @@ trait Moderation {
 	
 	protected function handleModeratorBan($socket) {
 		$penguin = $this->penguins[$socket];
+		
 		$player = Packet::$Data[2];
 		$banType = Packet::$Data[3];
 		$banReason = Packet::$Data[4];
 		$banDuration = Packet::$Data[5];
 		$penguinName = Packet::$Data[6];
 		$banNotes = Packet::$Data[7];
+		
 		if($penguin->moderator) {
-
 			if(is_numeric($player)) {
 				$targetPlayer = $this->getPlayerById($player);
 				if($targetPlayer !== null) {
@@ -89,8 +93,13 @@ trait Moderation {
 					} else {
 						$targetPlayer->database->updateColumnById($targetPlayer->id, "Banned", "perm");
 					}
+					
+					$penguin->database->addBan($player, $penguin->username, $banNotes, $banDuration, $banType);
+					
 					$targetPlayer->send("%xt%ban%-1%$banType%$banReason%$banDuration%$banNotes%");
+					
 					$this->removePenguin($targetPlayer);
+					
 					Logger::Info("{$penguin->username} has banned {$targetPlayer->username} for $banDuration hours");
 				}
 			}
@@ -99,13 +108,15 @@ trait Moderation {
 	
 	protected function handleModeratorMessage($socket) {
 		$penguin = $this->penguins[$socket];
+		
 		$type = Packet::$Data[1];
 		$stype = Packet::$Data[2];
 		$player = Packet::$Data[3];
+		
 		if($penguin->moderator) {
-
 			if(is_numeric($player)) {
 				$targetPlayer = $this->getPlayerById($player);
+				
 				if($targetPlayer !== null) {
 					$targetPlayer->send("%xt%moderatormessage%-1%$stype%");
 				}
