@@ -5,3 +5,4 @@ Kitsune/Logging/Logs/Notice.txt
 Kitsune/Logging/Logs/Warn.txt
 Kitsune/Logging/Logs/Error.txt
 Kitsune/Logging/Logs/Fatal.txt
+*.json
