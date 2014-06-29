@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 26, 2014 at 09:45 PM
+-- Generation Time: Jun 29, 2014 at 10:13 PM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -19,6 +19,24 @@ SET time_zone = "+00:00";
 --
 -- Database: `kitsune`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bans`
+--
+
+CREATE TABLE IF NOT EXISTS `bans` (
+  `ID` int(11) NOT NULL AUTO_INCREMENT,
+  `Moderator` char(12) NOT NULL,
+  `Player` int(11) unsigned NOT NULL,
+  `Comment` text NOT NULL,
+  `Expiration` int(8) NOT NULL,
+  `Time` int(8) NOT NULL,
+  `Type` smallint(3) unsigned NOT NULL,
+  PRIMARY KEY (`ID`),
+  UNIQUE KEY `Time` (`Time`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
 
