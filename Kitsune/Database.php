@@ -21,6 +21,42 @@ class Database extends \PDO {
 		}
 	}
 	
+	public function getNumberOfBans($penguinId) {
+		try {
+			$getNumberOfBans = $this->prepare("SELECT ID FROM `bans` WHERE Player = :Player");
+			
+			$getNumberOfBans->bindValue(":Player", $penguinId);
+			$getNumberOfBans->execute();
+			
+			$numberOfBans = $getNumberOfBans->rowCount();
+			
+			$getNumberOfBans->closeCursor();
+			
+			return $numberOfBans;
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
+	public function addBan($penguinId, $moderatorName, $comment, $expiration, $type) {
+		try {
+			$addBan = $this->prepare("INSERT INTO `bans` (`ID`, `Moderator`, `Player`, `Comment`, `Expiration`, `Time`, `Type`) VALUES (NULL,  :Moderator, :Player, :Comment, :Expiration, :Time, :Type)");
+			
+			$addBan->bindValue(":Moderator", $moderatorName);
+			$addBan->bindValue(":Player", $penguinId);
+			$addBan->bindValue(":Comment", $comment);
+			$addBan->bindValue(":Expiration", $expiration);
+			$addBan->bindValue(":Time", time());
+			$addBan->bindValue(":Type", $type);
+			
+			$addBan->execute();
+			
+			$addBan->closeCursor();
+		} catch(\PDOException $pdoException) {
+			Logger::Warn($pdoException->getMessage());
+		}
+	}
+	
 	public function getPuffleStats($penguinId) {
 		try {
 			$getPuffleStats = $this->prepare("SELECT ID, Food, Play, Rest, Clean FROM `puffles` WHERE Owner = :Penguin AND Backyard = '0'");
@@ -29,12 +65,14 @@ class Database extends \PDO {
 			
 			$puffleStats = $getPuffleStats->fetchAll(\PDO::FETCH_NUM);
 			
+			$getPuffleStats->closeCursor();
+			
 			$puffleStats = implode(',', array_map(
 				function($puffleStatistics) {					
 					return implode('|', $puffleStatistics);
 				}, $puffleStats
 			));
-			
+						
 			return $puffleStats;
 		} catch(\PDOException $pdoException) {
 			Logger::Warn($pdoException->getMessage());
@@ -44,8 +82,10 @@ class Database extends \PDO {
 	public function deleteMailFromUser($recipientId, $senderId) {
 		try {	
 			$deleteMail = $this->prepare("DELETE FROM `postcards` WHERE `Recipient` = :Recipient AND `SenderID` = :Sender");
+			
 			$deleteMail->bindValue(":Recipient", $recipientId);
 			$deleteMail->bindValue(":Sender", $senderId);
+			
 			$deleteMail->execute();
 			$deleteMail->closeCursor();
 		} catch(\PDOException $pdoException) {
