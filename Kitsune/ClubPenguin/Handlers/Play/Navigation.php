@@ -78,6 +78,21 @@ trait Navigation {
 		$playerString = $penguin->getPlayerString();
 		$loginTime = time(); // ?
 		
+		$puffleQuestInfo = explode(",", $penguin->database->getColumnById($penguin->id, "PuffleQuest"));
+		$penguin->puffleQuest['canDigGold'] = false;
+		$penguin->puffleQuest['nuggets'] = $puffleQuestInfo[0];
+		$penguin->puffleQuest['firstDig'] = $puffleQuestInfo[1];
+		$penguin->puffleQuest['amountOfDigsToday'] = 0;
+		$penguin->puffleQuest['lastDig'] = strtotime("-2 minutes");
+		$penguin->puffleQuest['lastDigOC'] = strtotime("-2 minutes");
+		$penguin->puffleQuest['rainbowQuest']['canAdopt'] = false;
+		$penguin->puffleQuest['rainbowQuest']['coinsCollected'] = array(0 => false, 1 => false ,2 => false, 3 => false);
+		$puffleQuest = explode(";", rtrim(trim(stristr($penguin->database->getColumnById($penguin->id, "PuffleQuest"), "|"), "|"), ","));
+		$penguin->puffleQuest['rainbowQuest']['currentTask'] = $puffleQuest[0];
+		$penguin->puffleQuest['rainbowQuest']['questsDone'] = $puffleQuest[1];
+		$penguin->puffleQuest['rainbowQuest']['timestamp'] = $puffleQuest[2];
+		$penguin->send("%xt%currencies%-1%1|{$penguin->puffleQuest['nuggets']}%");
+		
 		$loadPlayer = "$playerString|%{$penguin->coins}%0%1440%$loginTime%{$penguin->age}%0%7521%%7%1%0%211843";
 		$penguin->send("%xt%lp%-1%$loadPlayer%");
 		

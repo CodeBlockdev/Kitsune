@@ -46,6 +46,7 @@ class Penguin {
 	public $room;
 	
 	public $walkingPuffle = array();
+	public $puffleQuest = array();
 	
 	public $socket;
 	public $database;

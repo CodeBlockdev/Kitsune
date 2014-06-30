@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 29, 2014 at 10:13 PM
+-- Generation Time: Jun 30, 2014 at 03:36 AM
 -- Server version: 5.6.16
 -- PHP Version: 5.5.11
 
@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS `penguins` (
   `Stamps` text NOT NULL,
   `StampBook` varchar(150) NOT NULL DEFAULT '1%1%1%1',
   `EPF` varchar(9) NOT NULL DEFAULT '0,0,0',
+  `PuffleQuest` varchar(25) NOT NULL DEFAULT '0,1,|0;0;1403959119;',
   PRIMARY KEY (`ID`),
   UNIQUE KEY `Username` (`Username`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=101 ;

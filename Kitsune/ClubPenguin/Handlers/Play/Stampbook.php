@@ -19,6 +19,17 @@ trait Stampbook {
 		}
 	}
 	
+	protected function addStamp($penguin, $stampId) {
+		if(is_numeric($stampId)){
+			$stamps = $penguin->database->getColumnById($penguin->id, "Stamps");
+			if(strpos($stamps, $stampId.",") === false) {
+				$penguin->database->updateColumnById($penguin->id, "Stamps", $stamps . $stampId . ",");
+				$penguin->send("%xt%aabs%-1%$stampId%");
+				$penguin->recentStamps .= $stampId."|";
+			}
+		}
+	}
+	
 	protected function handleGetStamps($socket) {
 		$penguin = $this->penguins[$socket];
 		$playerId = Packet::$Data[2];
