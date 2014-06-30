@@ -536,7 +536,7 @@ trait Pet {
 						$penguin->puffleQuest['rainbowQuest']['canAdopt'] = true;
 						$penguin->puffleQuest['rainbowQuest']['timestamp'] = strtotime("+20 minutes");
 					}else{
-						$penguin->puffleQuest['rainbowQuest']['timestamp'] = strtotime("+2 minutes");
+						$penguin->puffleQuest['rainbowQuest']['timestamp'] = strtotime("+20 minutes");
 					}
 					$penguin->database->updateColumnById($penguin->id, "PuffleQuest", $penguin->puffleQuest['nuggets'].",".$penguin->puffleQuest['firstDig'].",|".$penguin->puffleQuest['rainbowQuest']['currentTask'].";".$penguin->puffleQuest['rainbowQuest']['questsDone'].";".$penguin->puffleQuest['rainbowQuest']['timestamp'].";");
 				}
