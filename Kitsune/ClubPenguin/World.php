@@ -110,7 +110,7 @@ final class World extends ClubPenguin {
 			"t#at" => "handleOpenPlayerBook",
 			"t#rt" => "handleClosePlayerBook",
 			
-			"bh#lnbhg" => "handleLeaveGame",
+			"bh#lnbhg" => "handleLeaveBlackholeGame",
 			
 			"f#epfga"	=>	"handleGetAgentStatus",
 			"f#epfsa"	=>	"handleSetAgentStatus",
@@ -133,7 +133,10 @@ final class World extends ClubPenguin {
 			"lw" => "handleLeaveWaddle",
 			"jz" => "handleStartGame",
 			
-			"zm" => "handleSendMove"
+			"zm" => "handleSendMove",
+			
+			"gwcj" => "handleGetWaddleCardJitsu",
+			"lz" => "handleLeaveGame"
 		)
 	);
 	
@@ -153,9 +156,8 @@ final class World extends ClubPenguin {
 	use Handlers\Play\PlayerTransformation;
 	
 	use Handlers\Game\General;
-	use Handlers\Game\Rink;
-	use Handlers\Game\SledRacing;
-	use Handlers\Game\Waddle;	
+	use Handlers\Game\MultiplayerGame;
+	use Handlers\Game\Waddle;
 	
 	public $items = array();
 	public $pins = array();
@@ -169,6 +171,8 @@ final class World extends ClubPenguin {
 	
 	public $gameStamps = array();
 	public $epfItems = array();
+	
+	public $ninjaCards = array();
 	
 	public $spawnRooms = array();
 	public $penguinsById = array();
@@ -213,9 +217,6 @@ final class World extends ClubPenguin {
 				}
 			}
 		}
-
-		unset($rooms);
-		unset($stamps);
 		
 		$agentRooms = array(210, 212, 323, 803);
 		$rockhoppersShip = array(422, 423);
@@ -244,39 +245,30 @@ final class World extends ClubPenguin {
 			if(isset($item['is_epf'])) {
 				$this->epfItems[$item["paper_item_id"]] = $item["cost"];
 			}
-			
-			unset($items[$itemIndex]);
 		}
 		
 		$locations = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloo_locations.json");
 		foreach($locations as $locationIndex => $location) {
 			$locationId = $location["igloo_location_id"];
 			$this->locations[$locationId] = $location["cost"];
-			
-			unset($locations[$locationIndex]);
 		}
 		
 		$furnitureList = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/furniture_items.json");
 		foreach($furnitureList as $furnitureIndex => $furniture) {
 			$furnitureId = $furniture["furniture_item_id"];
 			$this->furniture[$furnitureId] = $furniture["cost"];
-			
-			unset($furnitureList[$furnitureIndex]);
 		}
 		
 		$floors = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloo_floors.json");
 		foreach($floors as $floorIndex => $floor) {
 			$floorId = $floor["igloo_floor_id"];
-			$this->floors[$floorId] = $floor["cost"];
 			
-			unset($floors[$floorIndex]);
+			$this->floors[$floorId] = $floor["cost"];
 		}
 		
 		$igloos = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/igloos.json");
 		foreach($igloos as $iglooId => $igloo) {
 			$this->igloos[$iglooId] = $igloo["cost"];
-			
-			unset($igloos[$iglooId]);
 		}
 		
 		$careItems = $downloadAndDecode("http://media1.clubpenguin.com/play/en/web_service/game_configs/puffle_items.json");
@@ -284,8 +276,11 @@ final class World extends ClubPenguin {
 			$itemId = $careItem["puffle_item_id"];
 			
 			$this->careItems[$itemId] = array($careItem["cost"], $careItem["quantity"]);
-			
-			unset($careItems[$careId]);
+		}
+		
+		$ninjaCards = $downloadAndDecode("crumbs/cards.json");
+		foreach($ninjaCards as $cardIndex => $ninjaCard) {
+			array_push($this->ninjaCards, array($ninjaCard["card_id"], $ninjaCard["element"], $ninjaCard["value"], $ninjaCard["color"], $ninjaCard["power_id"]));
 		}
 		
 		Logger::Fine("World server is online");

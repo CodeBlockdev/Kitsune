@@ -18,8 +18,8 @@ class Room {
 	public function add($penguin) {
 		array_push($this->penguins, $penguin);
 		
-		if($this->externalId == 999) {
-			$penguin->send("%xt%jx%{$penguin->room->internalId}%{$this->externalId}%");
+		if($this->externalId == 999 || $this->externalId == 998) {
+			$penguin->send("%xt%jx%{$penguin->waddleRoom}%{$this->externalId}%");
 		} else {
 			if($this->isGame) {
 				$nonBlackholeGames = array(900, 909, 956, 950, 963, 121);
