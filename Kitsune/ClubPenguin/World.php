@@ -280,7 +280,7 @@ final class World extends ClubPenguin {
 		
 		$ninjaCards = $downloadAndDecode("crumbs/cards.json");
 		foreach($ninjaCards as $cardIndex => $ninjaCard) {
-			array_push($this->ninjaCards, array($ninjaCard["card_id"], $ninjaCard["element"], $ninjaCard["value"], $ninjaCard["color"], $ninjaCard["power_id"]));
+			$this->ninjaCards[$ninjaCard["card_id"]] = array($ninjaCard["element"], $ninjaCard["value"], $ninjaCard["color"], $ninjaCard["power_id"]);
 		}
 		
 		Logger::Fine("World server is online");
