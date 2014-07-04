@@ -69,8 +69,8 @@ trait MultiplayerGame {
 					
 					$jitsuCards = array_reverse($jitsuCards, true);
 					
-					Logger::Info("$playerSeat's deck: ");
-					var_dump($jitsuCards);
+					//Logger::Info("$playerSeat ({$penguin->username})'s deck: ");
+					//var_dump($jitsuCards);
 					
 					$dealCards = implode("%", array_map(
 						function($cardString, $cardIndex) use ($playerSeat, $penguin) {
@@ -87,14 +87,16 @@ trait MultiplayerGame {
 				} elseif($moveType == "pick") {
 					$cardIndex = Packet::$Data[3]; // Choosen card
 					$playerSeat = array_search($penguin, $penguin->room->penguins);
-					$leOpponent = $playerSeat == 0 ? 1 : 0;
+
+					$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%pick%$playerSeat%$cardIndex%");
 					
-					$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%pick%$leOpponent%$cardIndex%");
+					//var_dump($this->jitsuMatch[$penguin->waddleRoom]);
+					//Logger::Debug("Room->penguins");
+					//var_dump(array_keys($penguin->room->penguins));
 					
-					var_dump($this->jitsuMatch[$penguin->waddleRoom]);
-					Logger::Info("Player $playerSeat choose $cardIndex!");
+					//Logger::Info("Player $playerSeat ({$penguin->username}) chose $cardIndex!");
 					
-					$cardId = $this->jitsuMatch[$penguin->waddleRoom][$leOpponent][$cardIndex];
+					$cardId = $this->jitsuMatch[$penguin->waddleRoom][$playerSeat][$cardIndex];
 					$cardElement = $this->ninjaCards[$cardId][0];
 					$cardValue = $this->ninjaCards[$cardId][1];
 					$powerId = $this->ninjaCards[$cardId][3];
@@ -109,7 +111,7 @@ trait MultiplayerGame {
 					}
 
 					$roundId = key($this->jitsuMatch[$penguin->waddleRoom]["rounds"]);
-					Logger::Debug("Judging round $roundId");
+					//Logger::Debug("Judging round $roundId");
 					if(!isset($this->jitsuMatch[$penguin->waddleRoom]["rounds"][$roundId][$playerSeat])) {
 						$this->jitsuMatch[$penguin->waddleRoom]["rounds"][$roundId][$playerSeat] = array($cardElement, $cardValue);
 					}
@@ -118,6 +120,7 @@ trait MultiplayerGame {
 						$opponentSeat = $playerSeat == 0 ? 1 : 0;
 						list($opponentElement, $opponentValue) = $this->jitsuMatch[$penguin->waddleRoom]["rounds"][$roundId][$opponentSeat];
 						
+						// Maybe use switch and create a function for this stuff
 						if($cardElement == "f") {
 							if($opponentElement == "w") {
 								$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$opponentSeat%-1%");
@@ -126,7 +129,42 @@ trait MultiplayerGame {
 								$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$playerSeat%-1%");
 								$this->jitsuMatch[$penguin->waddleRoom]["score"][$playerSeat] += $cardValue;
 							} elseif($opponentElement == "f") {
-								// Tie
+								if($cardValue > $opponentValue) {
+									$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$playerSeat%-1%");
+									$this->jitsuMatch[$penguin->waddleRoom]["score"][$playerSeat] += $cardValue;
+								} elseif($opponentValue > $cardValue) {
+									$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$opponentSeat%-1%");
+									$this->jitsuMatch[$penguin->waddleRoom]["score"][$opponentSeat] += $opponentValue;
+								} else {
+									Logger::Warn("A draw! This is here to make sure it works!");
+								}
+							}
+						} elseif($cardElement == "w") {
+							if($opponentElement == "i") {
+								$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$opponentSeat%-1%");
+								$this->jitsuMatch[$penguin->waddleRoom]["score"][$opponentSeat]  += $opponentValue;
+							} elseif($opponentElement == "f") {
+								$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$playerSeat%-1%");
+								$this->jitsuMatch[$penguin->waddleRoom]["score"][$playerSeat] += $cardValue;
+							} elseif($opponentElement == "w") {
+								if($cardValue > $opponentValue) {
+									$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$playerSeat%-1%");
+									$this->jitsuMatch[$penguin->waddleRoom]["score"][$playerSeat] += $cardValue;
+								} elseif($opponentValue > $cardValue) {
+									$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$opponentSeat%-1%");
+									$this->jitsuMatch[$penguin->waddleRoom]["score"][$opponentSeat] += $opponentValue;
+								} else {
+									Logger::Warn("A draw! This is here to make sure it works!");
+								}
+							}
+						} elseif($cardElement == "i") {
+							if($opponentElement == "w") {
+								$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$playerSeat%-1%");
+								$this->jitsuMatch[$penguin->waddleRoom]["score"][$playerSeat]  += $playerSeat;
+							} elseif($opponentElement == "f") {
+								$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$opponentSeat%-1%");
+								$this->jitsuMatch[$penguin->waddleRoom]["score"][$opponentSeat] += $cardValue;
+							} elseif($opponentElement == "i") {
 								if($cardValue > $opponentValue) {
 									$penguin->room->send("%xt%zm%{$penguin->waddleRoom}%judge%$playerSeat%-1%");
 									$this->jitsuMatch[$penguin->waddleRoom]["score"][$playerSeat] += $cardValue;
@@ -139,8 +177,8 @@ trait MultiplayerGame {
 							}
 						}
 						
-						$newRound = $roundId++;
-						$this->jitsuMatch[$penguin->waddleRoom]["rounds"][$newRound] = array(); // A new round as started
+						$newRound = ++$roundId;
+						$this->jitsuMatch[$penguin->waddleRoom]["rounds"][$newRound] = array();
 						Logger::Info("New round! $newRound");
 					}
 				}
